@@ -272,7 +272,7 @@ public class CreditServiceImpl implements CreditService {
 
   @Override
   public Future<PaginatedResult<ComputeRole>> getAllComputeRequests(PaginatedRequest paginatedRequest) {
-    return computeRoleDAO.getAll(paginatedRequest);
+    return computeRoleDAO.getAllWithFilters(paginatedRequest);
   }
 
   @Override
