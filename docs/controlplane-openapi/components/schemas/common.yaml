@@ -469,6 +469,28 @@ createNotificationForbidden:
     type: urn:dx:controlPlane:forbidden
     title: Forbidden
     detail: User does not have the required role.
+createOrganisationCreationRequestConflictResponse:
+  title: Create Organisation request conflict response
+  type: object
+  additionalProperties: false
+  properties:
+    type:
+      type: string
+      minLength: 1
+    title:
+      type: string
+      minLength: 1
+    detail:
+      type: string
+      minLength: 1
+  required:
+    - type
+    - title
+    - detail
+  example:
+    type: urn:dx:controlPlane:conflict
+    title: Conflict
+    detail: Organisation create request already granted/ pending for this user
 createNotificationConflictResponse:
   title: Create notification conflict response
   type: object
@@ -5153,7 +5175,7 @@ NotFound:
       example: Not Found
     detail:
       type: string
-      example: Requested resource does not exist
+      example: No request found with given ID
   required:
   - type
   - title

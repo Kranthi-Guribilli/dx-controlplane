@@ -66,6 +66,7 @@ import org.cdpg.dx.auth.authorization.handler.AuthorizationHandler;
 import org.cdpg.dx.auth.model.DxRole;
 import org.cdpg.dx.auth.model.Scopes;
 import org.cdpg.dx.common.URNGenerator;
+import org.cdpg.dx.common.exception.DxAuthException;
 import org.cdpg.dx.common.exception.DxBadRequestException;
 import org.cdpg.dx.common.exception.DxConflictException;
 import org.cdpg.dx.common.exception.DxForbiddenException;
@@ -961,6 +962,8 @@ public class ItemController implements ApiController {
             err -> {
               if (err instanceof DxForbiddenException) {
                 ctx.fail(err); // failure handler should map to 403
+              } else if (err instanceof DxUnauthorizedException) {
+                ctx.fail(new DxUnauthorizedException(err.getMessage())); // failure handler should map to 401
               } else {
                 LOGGER.error("Error retrieving item with ID '{}': {}", itemId, err.getMessage());
                 ctx.fail(new DxInternalServerErrorException(err.getMessage()));

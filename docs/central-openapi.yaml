@@ -1177,7 +1177,7 @@ paths:
                 - $ref: '#/components/schemas/exampleEntityDataBank'
                 - $ref: '#/components/schemas/exampleEntityPotentialApps'
       responses:
-        '200':
+        '201':
           description: Successfully inserted
           content:
             application/json:
@@ -22178,7 +22178,7 @@ components:
           example: Not Found
         detail:
           type: string
-          example: Requested resource does not exist
+          example: No request found with given ID
       required:
         - type
         - title

@@ -59,7 +59,7 @@
             - $ref: ../components/schemas/common.yaml#/exampleEntityDataBank
             - $ref: ../components/schemas/common.yaml#/exampleEntityPotentialApps
     responses:
-      '200':
+      '201':
         description: Successfully inserted
         content:
           application/json:
