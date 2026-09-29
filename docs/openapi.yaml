@@ -1439,8 +1439,6 @@ paths:
                   value:
                     type: urn:dx:controlPlane:success
                     title: Success
-                    results:
-                      - id: 6e58c916-f6c1-448d-acea-756f3272bc57
                     detail: 'Success: Item deleted successfully'
         '400':
           description: Invalid ID.
