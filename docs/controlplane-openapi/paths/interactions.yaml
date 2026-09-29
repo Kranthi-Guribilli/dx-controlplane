@@ -902,18 +902,25 @@
             maximum: 5
       - name: time
         in: query
-        description: Start of the rating-creation time window. Requires `timerel`; requires `endtime` for `between`/`during`.
+        description: >
+          Start of the feedback-creation time window in ISO local date-time format
+          (`yyyy-MM-dd'T'HH:mm:ss`). Requires `timerel`;
+          requires `endtime` for `between`/`during`.
         required: false
         schema:
           type: string
-          format: date-time
+          example: "2026-09-20T00:48:07"
+
       - name: endtime
         in: query
-        description: End of the rating-creation time window. Only used with `timerel=between` or `timerel=during`.
+        description: >
+          End of the feedback-creation time window in ISO local date-time format
+          (`yyyy-MM-dd'T'HH:mm:ss`). Only used with
+          `timerel=between` or `timerel=during`.
         required: false
         schema:
           type: string
-          format: date-time
+          example: "2026-09-24T00:00:00"
       - name: timerel
         in: query
         description: Temporal relation to apply against `ratingCreatedAt` when `time` is provided.
@@ -1209,22 +1216,24 @@
       - name: time
         in: query
         description: >
-          Start of the feedback-creation time window. Requires `timerel`;
+          Start of the feedback-creation time window in ISO local date-time format
+          (`yyyy-MM-dd'T'HH:mm:ss`). Requires `timerel`;
           requires `endtime` for `between`/`during`.
         required: false
         schema:
           type: string
-          format: date-time
+          example: "2026-09-20T00:48:07"
 
       - name: endtime
         in: query
         description: >
-          End of the feedback-creation time window. Only used with
+          End of the feedback-creation time window in ISO local date-time format
+          (`yyyy-MM-dd'T'HH:mm:ss`). Only used with
           `timerel=between` or `timerel=during`.
         required: false
         schema:
           type: string
-          format: date-time
+          example: "2026-09-24T00:00:00"
 
       - name: timerel
         in: query
@@ -1347,22 +1356,24 @@
       - name: time
         in: query
         description: >
-          Start of the feedback-creation time window. Requires `timerel`;
+          Start of the feedback-creation time window in ISO local date-time format
+          (`yyyy-MM-dd'T'HH:mm:ss`). Requires `timerel`;
           requires `endtime` for `between`/`during`.
         required: false
         schema:
           type: string
-          format: date-time
+          example: "2026-09-20T00:48:07"
 
       - name: endtime
         in: query
         description: >
-          End of the feedback-creation time window. Only used with
+          End of the feedback-creation time window in ISO local date-time format
+          (`yyyy-MM-dd'T'HH:mm:ss`). Only used with
           `timerel=between` or `timerel=during`.
         required: false
         schema:
           type: string
-          format: date-time
+          example: "2026-09-24T00:00:00"
 
       - name: timerel
         in: query
