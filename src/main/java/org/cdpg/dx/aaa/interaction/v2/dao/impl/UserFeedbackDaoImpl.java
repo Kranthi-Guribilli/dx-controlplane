@@ -42,6 +42,55 @@ public class UserFeedbackDaoImpl extends AbstractBaseDAO<UserFeedback> implement
 
     validateFeedback(json);
 
+    String selectSql =
+        """
+        SELECT feedback_status
+        FROM user_interactions
+        WHERE user_id = $1
+          AND asset_id = $2
+        """;
+
+    JsonArray selectParams =
+        new JsonArray()
+            .add(userFeedback.userId().toString())
+            .add(userFeedback.assetId().toString());
+
+    return postgresService
+        .executeQuery(selectSql, selectParams)
+        .compose(
+            rows -> {
+
+              // No existing record -> use the existing INSERT flow
+              if (rows.getRows().isEmpty()) {
+                return insertFeedback(userFeedback, json);
+              }
+
+              JsonObject existing = rows.getRows().getJsonObject(0);
+              String feedbackStatus = existing.getString("feedback_status");
+
+              // Feedback was deleted earlier.
+              // The interaction row still exists, so reuse it.
+              if (feedbackStatus == null) {
+                return restoreDeletedFeedback(userFeedback, json);
+              }
+
+              // Existing feedback with a status -> preserve existing behavior.
+              return Future.failedFuture(
+                  new DxConflictException(
+                      "Feedback already exists for this asset. "
+                          + "Use the PUT /iudx/v2/user/feedback API to update it."));
+            })
+        .onFailure(
+            err ->
+                LOGGER.error(
+                    "Failed to post feedback for userId={}, assetId={}",
+                    userFeedback.userId(),
+                    userFeedback.assetId(),
+                    err));
+  }
+
+  private Future<UserFeedback> insertFeedback(UserFeedback userFeedback, JsonObject json) {
+
     String sql =
         """
         INSERT INTO user_interactions (
@@ -68,10 +117,6 @@ public class UserFeedbackDaoImpl extends AbstractBaseDAO<UserFeedback> implement
             'PENDING',
             now()
         )
-
-        ON CONFLICT (user_id, asset_id)
-        DO NOTHING
-
         RETURNING
             id,
             user_id,
@@ -107,25 +152,63 @@ public class UserFeedbackDaoImpl extends AbstractBaseDAO<UserFeedback> implement
 
     return postgresService
         .executeQuery(sql, params)
-        .compose(
-            rows -> {
-              if (!rows.getRows().isEmpty()) {
-                return Future.succeededFuture(
-                    UserFeedback.fromJson(rows.getRows().getJsonObject(0)));
-              }
+        .map(rows -> UserFeedback.fromJson(rows.getRows().getJsonObject(0)));
+  }
 
-              return Future.failedFuture(
-                  new DxConflictException(
-                      "Feedback already exists for this asset. "
-                          + "Use the PUT /iudx/v2/user/feedback API to update it."));
-            })
-        .onFailure(
-            err ->
-                LOGGER.error(
-                    "Failed to post feedback for userId={}, assetId={}",
-                    userFeedback.userId(),
-                    userFeedback.assetId(),
-                    err));
+  private Future<UserFeedback> restoreDeletedFeedback(UserFeedback userFeedback, JsonObject json) {
+
+    String sql =
+        """
+        UPDATE user_interactions
+        SET
+            asset_type = $1,
+            entity_rating = $2,
+            action_subtype = $3,
+            action_subdata = $4,
+            feedback_created_at = now(),
+            feedback_updated_at = now(),
+            feedback_status = 'PENDING',
+            feedback_comment = NULL,
+            feedback_status_updated_at = now()
+        WHERE user_id = $5
+          AND asset_id = $6
+          AND feedback_status IS NULL
+        RETURNING
+            id,
+            user_id,
+            asset_id,
+            asset_type,
+            entity_rating,
+            action_subtype,
+            action_subdata,
+            feedback_created_at,
+            feedback_updated_at,
+            feedback_status,
+            feedback_comment,
+            feedback_status_updated_at
+        """;
+
+    JsonArray params =
+        new JsonArray()
+            .add(userFeedback.assetType())
+            .addNull()
+            .addNull()
+            .addNull()
+            .add(userFeedback.userId().toString())
+            .add(userFeedback.assetId().toString());
+
+    if (json.getInteger("entityRating") != null) {
+      params.set(1, json.getInteger("entityRating"));
+    }
+
+    if (json.getString("actionSubtype") != null) {
+      params.set(2, json.getString("actionSubtype"));
+      params.set(3, json.getJsonObject("actionSubdata"));
+    }
+
+    return postgresService
+        .executeQuery(sql, params)
+        .map(rows -> UserFeedback.fromJson(rows.getRows().getJsonObject(0)));
   }
 
   private void validateFeedback(JsonObject json) {
