@@ -420,8 +420,22 @@ public class ItemExistenceValidator {
 
     // Preserve itemCreatedAt
     request.put(ITEM_CREATED_AT, existing.getString(ITEM_CREATED_AT));
+
+    // Preserve providerUserId
     request.put(PROVIDER_USER_ID, existing.getString(PROVIDER_USER_ID));
+
+    // Preserve metrics
     request.put(METRICS, existing.getJsonObject(METRICS));
+
+    JsonArray roles = request.getJsonArray("roles", new JsonArray());
+    boolean isOrgAdmin = roles.contains(DxRole.ORG_ADMIN.value());
+
+    // Preserve/update itemStatus
+    if (isOrgAdmin) {
+      request.put(ITEM_STATUS, VERIFIED);
+    } else {
+      request.put(ITEM_STATUS, existing.getString(ITEM_STATUS, UNVERIFIED));
+    }
 
     // Preserve publishStatus
     request.put(PUBLISH_STATUS, existing.getString(PUBLISH_STATUS, PENDING));
