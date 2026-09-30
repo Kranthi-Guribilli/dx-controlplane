@@ -119,7 +119,7 @@ public class AccessRequestServiceImpl implements AccessRequestService {
                         if (responseModel.getElasticsearchResponses().isEmpty()
                             || responseModel.getElasticsearchResponses().getFirst() == null) {
                           return Future.failedFuture(
-                              new DxForbiddenException("Item not found for ID: " + itemId));
+                              new DxNotFoundException("Item not found for ID: " + itemId));
                         }
 
                         JsonObject itemJson = responseModel.getElasticsearchResponses().getFirst();
