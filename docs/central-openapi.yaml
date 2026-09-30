@@ -6705,6 +6705,17 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: feedbackStatus
+          in: query
+          description: Filter feedback by status
+          required: false
+          schema:
+            type: string
+            enum:
+              - PENDING
+              - APPROVED
+              - REJECTED
+            example: PENDING
         - name: actionSubtype
           in: query
           description: Filter by action subtype (repeatable)
@@ -6821,6 +6832,17 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: feedbackStatus
+          in: query
+          description: Filter feedback by status
+          required: false
+          schema:
+            type: string
+            enum:
+              - PENDING
+              - APPROVED
+              - REJECTED
+            example: PENDING
         - name: actionSubtype
           in: query
           description: Filter by action subtype (repeatable)

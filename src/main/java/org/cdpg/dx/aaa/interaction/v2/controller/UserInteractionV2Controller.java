@@ -419,7 +419,13 @@ public class UserInteractionV2Controller implements ApiController {
               .defaultSort("feedback_created_at", "desc")
               .defaultTimeField("feedback_created_at")
               .build();
-      LOGGER.debug("paginated request has been build ");
+      LOGGER.debug(
+          "Pagination: page={}, size={}, filters={}, temporalRequests={}, orderBy={}",
+          paginatedRequest.page(),
+          paginatedRequest.size(),
+          paginatedRequest.filters(),
+          paginatedRequest.temporalRequests(),
+          paginatedRequest.orderByList());
 
       List<String> assetIdParams = ctx.queryParam("assetId");
       String assetIdParam =

@@ -235,6 +235,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/createNotificationResourceNotFoundResponse'
+              examples:
+                Item Not Found:
+                  value:
+                    type: urn:dx:aclApd:notFound
+                    title: Not Found
+                    detail: 'Item not found for ID: 1244cb12-79d4-484d-8808-de7c582a92ec'
           headers:
             Content-Type:
               schema:
