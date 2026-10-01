@@ -48,6 +48,7 @@ public class UserFeedbackDaoImpl extends AbstractBaseDAO<UserFeedback> implement
         FROM user_interactions
         WHERE user_id = $1
           AND asset_id = $2
+        ORDER BY feedback_created_at DESC
         """;
 
     JsonArray selectParams =
@@ -74,7 +75,13 @@ public class UserFeedbackDaoImpl extends AbstractBaseDAO<UserFeedback> implement
                 return restoreDeletedFeedback(userFeedback, json);
               }
 
-              // Existing feedback with a status -> preserve existing behavior.
+              // Rejected feedback can be submitted again.
+              if ("REJECTED".equalsIgnoreCase(feedbackStatus)) {
+                return insertFeedback(userFeedback, json);
+              }
+
+              // Existing feedback with either pending or approved status
+              // behavior.
               return Future.failedFuture(
                   new DxConflictException(
                       "Feedback already exists for this asset. "
