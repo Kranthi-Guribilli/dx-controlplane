@@ -3,8 +3,10 @@ CustomRoleResponse:
   properties:
     type:
       type: string
+      example: urn:dx:controlPlane:success
     title:
       type: string
+      example: Success
     result:
       type: array
       items:

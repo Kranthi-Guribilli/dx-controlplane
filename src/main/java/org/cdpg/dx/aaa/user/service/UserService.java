@@ -33,7 +33,7 @@ public interface UserService {
     Future<PaginatedResult<CustomRole>> getAllCustomRoles(PaginatedRequest customRoles);
     Future<CustomRole> addCustomRoleAndScope(JsonObject body);
     Future<CustomRole> updateCustomScope(UUID requestId , JsonArray scopes);
-    Future<List<CustomRole>> getCustomRoleRequestByRequester(UUID userId);
+    Future<PaginatedResult<CustomRole>> getCustomRoleRequestByRequester(PaginatedRequest paginatedRequest);
     Future<CustomRole> getCustomRoleByUserAndRequester(UUID targetUserId, UUID requesterId);
     Future<Boolean> deleteScope(UUID requestedBy, JsonObject body);
 

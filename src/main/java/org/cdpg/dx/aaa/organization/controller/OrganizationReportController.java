@@ -1,29 +1,17 @@
 package org.cdpg.dx.aaa.organization.controller;
 
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.streams.ReadStream;
+import static org.cdpg.dx.aaa.apiserver.OperationIds.*;
+import static org.cdpg.dx.aaa.organization.config.Constants.*;
+
+import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.openapi.RouterBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.cdpg.dx.apiserver.ApiController;
-import org.cdpg.dx.aaa.delegation.service.DelegationService;
-import org.cdpg.dx.aaa.orgReport.service.OrganizationCreateReportService;
 import org.cdpg.dx.aaa.organization.handler.OrganizationReportHandler;
-import org.cdpg.dx.common.request.PaginatedRequest;
-import org.cdpg.dx.common.request.PaginationRequestBuilder;
-import org.cdpg.dx.common.util.RequestHelper;
-
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-
-import static org.cdpg.dx.aaa.apiserver.OperationIds.*;
-import static org.cdpg.dx.aaa.credit.util.Constants.ALLOWED_FILTER_MAP_FOR_CREDIT_REQUEST;
-import static org.cdpg.dx.aaa.credit.util.Constants.API_TO_DB_CREDIT_REQUEST;
-import static org.cdpg.dx.aaa.organization.config.Constants.*;
-import static org.cdpg.dx.database.postgres.util.Constants.DEFAULT_SORTING_ORDER;
+import org.cdpg.dx.apiserver.ApiController;
+import org.cdpg.dx.auth.authorization.handler.AuthorizationHandler;
+import org.cdpg.dx.auth.model.Scopes;
 
 public class OrganizationReportController implements ApiController {
 
@@ -79,14 +67,20 @@ public class OrganizationReportController implements ApiController {
   @Override
   public void register(RouterBuilder builder) {
 
+    Handler<RoutingContext> cosAdminAccess = AuthorizationHandler.forScopes(Scopes.ROLE_MANAGEMENT);
+
     builder
         .operation(OP_ORG_CREATE_REQUEST_REPORT)
         .handler(organizationReportHandler::getOrganizationCreateReport);
 
-    builder.operation(OP_ORG_LIST_REPORT).handler(organizationReportHandler::getOrganizationReport);
+    builder
+        .operation(OP_ORG_LIST_REPORT)
+        .handler(cosAdminAccess)
+        .handler(organizationReportHandler::getOrganizationReport);
 
     builder
         .operation(OP_ORG_JOIN_REQUEST_REPORT)
+        .handler(cosAdminAccess)
         .handler(organizationReportHandler::getOrganizationJoinReport);
 
     builder
@@ -95,6 +89,7 @@ public class OrganizationReportController implements ApiController {
 
     builder
         .operation(OP_PROVIDER_ROLE_REQUEST_REPORT)
+        .handler(cosAdminAccess)
         .handler(organizationReportHandler::getProviderRequestReport);
 
     builder

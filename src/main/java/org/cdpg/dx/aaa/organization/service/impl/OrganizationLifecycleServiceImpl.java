@@ -1,10 +1,18 @@
 package org.cdpg.dx.aaa.organization.service.impl;
 
+import static org.cdpg.dx.aaa.organization.config.Constants.*;
+import static org.cdpg.dx.common.util.DateTimeHelper.FORMATTER;
+
 import io.vertx.core.Future;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.cdpg.dx.aaa.organization.config.Constants;
 import org.cdpg.dx.aaa.organization.dao.OrganizationCreateRequestDAO;
 import org.cdpg.dx.aaa.organization.dao.OrganizationDAO;
 import org.cdpg.dx.aaa.organization.dao.OrganizationUserDAO;
-import org.cdpg.dx.aaa.organization.config.Constants;
 import org.cdpg.dx.aaa.organization.models.*;
 import org.cdpg.dx.aaa.organization.service.OrganizationLifecycleService;
 import org.cdpg.dx.auth.model.DxRole;
@@ -15,13 +23,6 @@ import org.cdpg.dx.database.postgres.models.PaginatedResult;
 import org.cdpg.dx.keycloak.service.KeycloakUserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import static org.cdpg.dx.aaa.organization.config.Constants.*;
 
 public class OrganizationLifecycleServiceImpl implements OrganizationLifecycleService {
 
@@ -235,6 +236,9 @@ public class OrganizationLifecycleServiceImpl implements OrganizationLifecycleSe
       Constants.ORG_CREATE_ID, orgId.toString()
     );
     Map<String, Object> updateDataMap = updateOrgDTO.toNonEmptyFieldsMap();
+
+    // Always refresh updatedAt when the organisation is updated
+    updateDataMap.put(Constants.UPDATED_AT, LocalDateTime.now().format(FORMATTER));
 
     return orgDAO.update(conditionMap, updateDataMap).compose(
       updated -> orgDAO.get(orgId)

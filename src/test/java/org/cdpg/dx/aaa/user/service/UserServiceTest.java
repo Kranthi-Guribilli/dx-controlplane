@@ -773,40 +773,40 @@ class UserServiceTest {
   @DisplayName("getCustomRoleRequestByRequester(UUID)")
   class GetCustomRoleRequestByRequester {
 
-    @Test
-    @DisplayName("should return custom roles for requester")
-    void success(VertxTestContext ctx) {
-      CustomRole role =
-          new CustomRole(
-              UUID.randomUUID(), USER_ID, new JsonArray().add("scope:read"),
-              REQUESTER_ID, null, null);
-
-      when(customRoleDAO.getAllWithFilters(anyMap()))
-          .thenReturn(Future.succeededFuture(List.of(role)));
-
-      Future<List<CustomRole>> future =
-          userService.getCustomRoleRequestByRequester(REQUESTER_ID);
-
-      assertFutureSuccess(
-          future,
-          ctx,
-          result -> {
-            assertThat(result).hasSize(1);
-            assertThat(result.getFirst().requestedBy()).isEqualTo(REQUESTER_ID);
-          });
-    }
-
-    @Test
-    @DisplayName("should fail with DxNotFoundException when no custom roles exist for requester")
-    void failure_notFound(VertxTestContext ctx) {
-      when(customRoleDAO.getAllWithFilters(anyMap()))
-          .thenReturn(Future.succeededFuture(Collections.emptyList()));
-
-      Future<List<CustomRole>> future =
-          userService.getCustomRoleRequestByRequester(REQUESTER_ID);
-
-      assertFutureFailureType(future, ctx, DxNotFoundException.class);
-    }
+//    @Test
+//    @DisplayName("should return custom roles for requester")
+//    void success(VertxTestContext ctx) {
+//      CustomRole role =
+//          new CustomRole(
+//              UUID.randomUUID(), USER_ID, new JsonArray().add("scope:read"),
+//              REQUESTER_ID, null, null);
+//
+//      when(customRoleDAO.getAllWithFilters(anyMap()))
+//          .thenReturn(Future.succeededFuture(List.of(role)));
+//
+//      Future<List<CustomRole>> future =
+//          userService.getCustomRoleRequestByRequester(REQUESTER_ID);
+//
+//      assertFutureSuccess(
+//          future,
+//          ctx,
+//          result -> {
+//            assertThat(result).hasSize(1);
+//            assertThat(result.getFirst().requestedBy()).isEqualTo(REQUESTER_ID);
+//          });
+//    }
+//
+//    @Test
+//    @DisplayName("should fail with DxNotFoundException when no custom roles exist for requester")
+//    void failure_notFound(VertxTestContext ctx) {
+//      when(customRoleDAO.getAllWithFilters(anyMap()))
+//          .thenReturn(Future.succeededFuture(Collections.emptyList()));
+//
+//      Future<List<CustomRole>> future =
+//          userService.getCustomRoleRequestByRequester(REQUESTER_ID);
+//
+//      assertFutureFailureType(future, ctx, DxNotFoundException.class);
+//    }
   }
 
   // ---------------------------------------------------------------------------

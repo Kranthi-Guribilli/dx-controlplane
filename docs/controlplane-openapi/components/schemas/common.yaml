@@ -5143,7 +5143,7 @@ BadRequest:
       example: Bad Request
     detail:
       type: string
-      example: Either requestId or (userId and scope) is required
+      example: Missing or malformed request
   required:
   - type
   - title

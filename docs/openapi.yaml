@@ -12923,7 +12923,7 @@ paths:
                   title:
                     type: string
                     example: Success
-                  result:
+                  detail:
                     type: string
                     description: Success message
               examples:
@@ -12931,7 +12931,7 @@ paths:
                   value:
                     type: urn:dx:controlPlane:success
                     title: Success
-                    result: User info updated successfully
+                    detail: User info updated successfully
         '400':
           description: Bad Request - Invalid or malformed request body
           content:
@@ -13540,19 +13540,19 @@ paths:
                   title:
                     type: string
                     example: Success
-                  result:
+                  detail:
                     type: string
               examples:
                 Deactivated:
                   value:
                     type: urn:dx:controlPlane:success
                     title: Success
-                    result: User deactivated successfully
+                    detail: User deactivated successfully
                 Activated:
                   value:
                     type: urn:dx:controlPlane:success
                     title: Success
-                    result: User activated successfully
+                    detail: User activated successfully
         '400':
           description: Bad Request - Invalid status value
           content:
@@ -13857,14 +13857,14 @@ paths:
                   title:
                     type: string
                     example: Success
-                  result:
+                  detail:
                     type: string
               examples:
                 Success:
                   value:
                     type: urn:dx:controlPlane:success
                     title: Success
-                    result: User info added successfully
+                    detail: User info added successfully
         '401':
           description: Unauthorized - Token missing or invalid
           content:
@@ -13979,14 +13979,14 @@ paths:
                   title:
                     type: string
                     example: Success
-                  result:
+                  detail:
                     type: string
               examples:
                 Success:
                   value:
                     type: urn:dx:controlPlane:success
                     title: Success
-                    result: User info updated successfully
+                    detail: User info updated successfully
         '401':
           description: Unauthorized - Token missing or invalid
           content:
@@ -21581,7 +21581,7 @@ components:
           example: Bad Request
         detail:
           type: string
-          example: Either requestId or (userId and scope) is required
+          example: Missing or malformed request
       required:
         - type
         - title
@@ -22849,8 +22849,10 @@ components:
       properties:
         type:
           type: string
+          example: urn:dx:controlPlane:success
         title:
           type: string
+          example: Success
         result:
           type: array
           items:

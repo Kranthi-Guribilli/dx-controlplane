@@ -1,5 +1,6 @@
 package org.cdpg.dx.aaa.organization.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.vertx.core.json.JsonObject;
 import org.cdpg.dx.aaa.organization.config.Constants;
 import org.cdpg.dx.common.exception.DxValidationException;
@@ -115,6 +116,7 @@ public record Organization(
   }
 
   @Override
+  @JsonIgnore
   public String getTableName() {
     return Constants.ORGANIZATION_TABLE;
   }
