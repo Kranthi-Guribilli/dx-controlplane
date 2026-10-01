@@ -26,6 +26,14 @@ import java.util.*;
 
 import static org.cdpg.dx.aaa.organization.config.Constants.USER_ID;
 import static org.cdpg.dx.aaa.user.util.constants.*;
+import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_ASSET_ORGANIZATION_ID;
+import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_ASSET_TYPE;
+import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_CREATED_AT;
+import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_EXPIRY_AT;
+import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_ITEM_ID;
+import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_STATUS;
+import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_UPDATED_AT;
+import static org.cdpg.dx.acl.accessRequest.util.Constants.API_TO_DB_MAP;
 import static org.cdpg.dx.database.postgres.util.Constants.DEFAULT_SORTING_ORDER;
 
 public class UserHandler {
@@ -169,8 +177,15 @@ public class UserHandler {
     User user = ctx.user();
     UUID userId = UUID.fromString(user.subject());
 
+    Map<String, Object> additionalFilters = Map.of(REQUESTED_BY, userId.toString());
+
+    PaginatedRequest request =
+        PaginationRequestBuilder.from(ctx)
+            .additionalFilters(additionalFilters)
+            .build();
+
     userService
-      .getCustomRoleRequestByRequester(userId)
+      .getCustomRoleRequestByRequester(request)
       .onSuccess(customRoles -> {
         ResponseBuilder.sendSuccess(ctx, customRoles, urnGenerator);
       })

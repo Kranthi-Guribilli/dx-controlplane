@@ -83,7 +83,7 @@ public class OrganizationQueryHandler {
                 OrganizationAuditHelper.buildOrganisationAudit(
                   ctx, new JsonObject(), OrganisationAuditOperation.GET_ORG);
               CpRoutingContextHelper.setAuditingLogV2(ctx, auditLogBuilder);
-              ResponseBuilder.sendSuccess(ctx, org.toJson(), urnGenerator);
+              ResponseBuilder.sendSuccess(ctx, org, urnGenerator);
             })
         .onFailure(
             err -> {

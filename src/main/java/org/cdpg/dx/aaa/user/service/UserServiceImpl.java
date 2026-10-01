@@ -292,21 +292,20 @@ public class UserServiceImpl implements UserService {
 
 
   @Override
-  public Future<List<CustomRole>> getCustomRoleRequestByRequester(UUID userId) {
+  public Future<PaginatedResult<CustomRole>> getCustomRoleRequestByRequester(PaginatedRequest paginatedRequest) {
 
-    Map<String, Object> filterMap =
-      Map.of(REQUESTED_BY, userId.toString());
 
-    return customRoleDAO.getAllWithFilters(filterMap)
-      .compose(customRoles -> {
+    return customRoleDAO.getAllWithFilters(paginatedRequest)
+      .compose(result -> {
+        List<CustomRole> customRoles = result.data();
         if (customRoles == null || customRoles.isEmpty()) {
           return Future.failedFuture(
             new DxNotFoundException(
-              "No custom role request found for requesterId: " + userId
+              "No custom role request found for requesterId: " + paginatedRequest.filters().get(REQUESTED_BY)
             )
           );
         }
-        return Future.succeededFuture(customRoles);
+        return Future.succeededFuture(result);
       });
   }
 
