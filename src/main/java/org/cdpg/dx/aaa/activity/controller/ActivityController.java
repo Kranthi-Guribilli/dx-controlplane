@@ -46,7 +46,6 @@ public class ActivityController implements ApiController {
   public void register(RouterBuilder builder) {
     builder
         .operation(OP_GET_ACTIVITY_FOR_CONSUMER)
-        .handler(AuthorizationHandler.forScopes(Scopes.DATA_ACCESS))
         .handler(this::handleGetAllActivityLogsForUser);
     builder
         .operation(OP_GET_ACTIVITY_FOR_ADMIN)

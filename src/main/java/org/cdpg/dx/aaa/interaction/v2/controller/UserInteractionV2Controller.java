@@ -84,11 +84,9 @@ public class UserInteractionV2Controller implements ApiController {
     builder
         .operation(OP_POST_USER_INTERACTION)
         .handler(auditingHandler::handleApiAudit)
-        .handler(userScopedAccess)
         .handler(this::handlePostUserInteractionRequest);
     builder
         .operation(OP_GET_USER_INTERACTIONS)
-        .handler(userScopedAccess)
         .handler(this::handleGetUserInteractionRequest);
     builder
         .operation(OP_SYNC_INTERACTION_METRICS)
@@ -98,13 +96,11 @@ public class UserInteractionV2Controller implements ApiController {
     builder
         .operation(OP_POST_USER_FEEDBACK)
         .handler(auditingHandler::handleApiAudit)
-        .handler(userScopedAccess)
         .handler(this::handlePostUserFeedbackRequest);
 
     builder
         .operation(OP_PUT_USER_FEEDBACK)
         .handler(auditingHandler::handleApiAudit)
-        .handler(userScopedAccess)
         .handler(this::handlePutUserFeedbackRequest);
 
     builder
@@ -116,13 +112,11 @@ public class UserInteractionV2Controller implements ApiController {
     builder
         .operation(OP_GET_USER_FEEDBACK)
         .handler(auditingHandler::handleApiAudit)
-        .handler(userScopedAccess)
         .handler(this::handleGetUserFeedbackRequest);
 
     builder
         .operation(OP_GET_APPROVED_PLATFORM_USER_FEEDBACK)
         .handler(auditingHandler::handleApiAudit)
-        .handler(userScopedAccess)
         .handler(this::handleGetApprovedPlatformUserFeedbackRequest);
 
     builder
@@ -134,7 +128,6 @@ public class UserInteractionV2Controller implements ApiController {
     builder
         .operation(OP_DELETE_USER_FEEDBACK)
         .handler(auditingHandler::handleApiAudit)
-        .handler(userScopedAccess)
         .handler(this::handleDeleteUserFeedbackRequest);
 
     builder
