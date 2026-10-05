@@ -24,7 +24,7 @@ public class AdminController implements ApiController {
 
     routerBuilder
         .operation("get-auth-v2-user")
-        .handler(selfAccess)
+        //.handler(selfAccess)
         .handler(adminHandler::getDxUserInfo);
 
     routerBuilder
@@ -39,31 +39,31 @@ public class AdminController implements ApiController {
 
     routerBuilder
         .operation("get-auth-v2-user-search")
-        .handler(selfAccess)
+        //.handler(selfAccess)
         .handler(adminHandler::getAllUsersInfoKeycloak);
 
     routerBuilder
         .operation("get-auth-v2-user-basic-username")
-        .handler(selfAccess)
+       // .handler(selfAccess)
         .handler(adminHandler::getUserByUserIdOrEmail);
 
     routerBuilder
         .operation("put-auth-v2-user")
-        .handler(selfAccess)
+        //.handler(selfAccess)
         .handler(adminHandler::updateDxUserInfo);
     routerBuilder
         .operation("put-auth-v2-user-password")
-        .handler(selfAccess)
+        //.handler(selfAccess)
         .handler(adminHandler::updatePassword);
 
     routerBuilder
         .operation("post-auth-v2-user-update")
-        .handler(selfAccess)
+      //  .handler(selfAccess)
         .handler(adminHandler::updateUserStatus);
 
     routerBuilder
         .operation("delete-auth-v2-user")
-        .handler(selfAccess)
+        //.handler(selfAccess)
         .handler(adminHandler::deleteDxUser);
 
     routerBuilder

@@ -45,7 +45,6 @@ public class ActivityReportController implements ApiController {
         .handler(this::handleGenerateCsvForAdmin);
     builder
         .operation("get-consumer-report")
-        .handler(AuthorizationHandler.forScopes(Scopes.DATA_ACCESS))
         .handler(this::handleGenerateCsvForConsumer);
   }
 

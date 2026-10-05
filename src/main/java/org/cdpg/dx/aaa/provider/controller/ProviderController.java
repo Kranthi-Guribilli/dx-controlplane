@@ -43,20 +43,20 @@ public class ProviderController implements ApiController {
     routerBuilder
         .operation(OP_CREATE_PROVIDER_REQUEST)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+        //.handler(selfAccess)
         .handler(kycVerification(isKycRequired))
         .handler(providerRoleHandler::createOrgProviderRequest);
 
     routerBuilder
         .operation(OP_GET_USER_PROVIDER_REQUESTS)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+        //.handler(selfAccess)
         .handler(providerRoleHandler::getOrgProviderRoleRequest);
 
     routerBuilder
         .operation(OP_DELETE_USER_PROVIDER_REQUEST)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+      //  .handler(selfAccess)
         .handler(providerRoleHandler::deleteOrgUserProviderRoleRequest);
 
     /* =========================
@@ -88,20 +88,20 @@ public class ProviderController implements ApiController {
     routerBuilder
         .operation(OP_CREATE_PLATFORM_PROVIDER_REQUEST)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+       // .handler(selfAccess)
         .handler(kycVerification(isKycRequired))
         .handler(providerRoleHandler::createPlatformProviderRequest);
 
     routerBuilder
         .operation(OP_GET_USER_PLATFORM_PROVIDER_REQUEST)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+       // .handler(selfAccess)
         .handler(providerRoleHandler::getPlatformUProviderRequest);
 
     routerBuilder
         .operation(OP_DELETE_USER_PLATFORM_PROVIDER_REQUEST)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+       // .handler(selfAccess)
         .handler(providerRoleHandler::deletePlatformUserProviderRequest);
 
     /* =========================

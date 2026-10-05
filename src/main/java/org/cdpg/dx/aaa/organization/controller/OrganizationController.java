@@ -67,19 +67,19 @@ public class OrganizationController implements ApiController {
     routerBuilder
         .operation(OP_GET_USER_ORG_CREATE_REQUESTS)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+        //.handler(selfAccess)
         .handler(createRequestHandler::getUserOrganisationRequest);
 
     routerBuilder
         .operation(OP_DELETE_USER_ORG_CREATE_REQUEST)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+      //  .handler(selfAccess)
         .handler(createRequestHandler::deleteOrganizationCreateRequest);
 
     routerBuilder
         .operation(OP_CREATE_ORG_REQUEST)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+        //.handler(selfAccess)
         .handler(kycVerification(isKycRequired))
         .handler(createRequestHandler::createOrganisationRequest);
 
@@ -96,7 +96,7 @@ public class OrganizationController implements ApiController {
     routerBuilder
         .operation(OP_CREATE_ORG_JOIN_REQUEST)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+       // .handler(selfAccess)
         .handler(kycVerification(isKycRequired))
         .handler(joinRequestHandler::joinOrganisationRequest);
 
@@ -109,19 +109,19 @@ public class OrganizationController implements ApiController {
     routerBuilder
         .operation(OP_GET_USER_ORG_JOIN_REQUESTS)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+        //.handler(selfAccess)
         .handler(joinRequestHandler::getUserJoinOrganisationRequests);
 
     routerBuilder
         .operation(OP_WITHDRAW_USER_ORG_JOIN_REQUESTS)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+       // .handler(selfAccess)
         .handler(joinRequestHandler::withdrawJoinRequest);
 
     routerBuilder
         .operation(OP_DELETE_USER_ORG_JOIN_REQUEST)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+       // .handler(selfAccess)
         .handler(joinRequestHandler::deleteUserJoinOrganisationRequests);
 
     routerBuilder
@@ -137,13 +137,13 @@ public class OrganizationController implements ApiController {
     routerBuilder
         .operation(OP_LIST_ORGANISATIONS)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+       // .handler(selfAccess)
         .handler(queryHandler::listAllOrganisations);
 
     routerBuilder
         .operation(OP_GET_ORGANISATION_BY_ID)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+       // .handler(selfAccess)
         .handler(queryHandler::getOrganizationById);
 
     routerBuilder
