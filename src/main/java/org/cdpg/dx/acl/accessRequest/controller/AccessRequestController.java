@@ -133,19 +133,19 @@ public class AccessRequestController implements ApiController {
     builder
         .operation(CREATE_ACCESS_REQUEST_API)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+        //.handler(selfAccess)
         .handler(this::createAccessRequestHandler);
 
     builder
         .operation(GET_ACCESS_REQUEST_CONSUMER_API)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+        //.handler(selfAccess)
         .handler(this::getConsumerAccessRequestHandler);
 
     builder
         .operation(WITHDRAW_ACCESS_REQUEST_API_FOR_CONSUMER)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+        //.handler(selfAccess)
         .handler(this::updateAccessRequestHandlerForConumser);
 
     builder
@@ -176,7 +176,7 @@ public class AccessRequestController implements ApiController {
     builder
         .operation(CHECK_ACCESS_REQUEST_API)
         .handler(auditingHandler::handleApiAudit)
-        .handler(selfAccess)
+        //.handler(selfAccess)
         .handler(this::checkAccessRequestHandler);
   }
 

@@ -66,7 +66,6 @@ import org.cdpg.dx.auth.authorization.handler.AuthorizationHandler;
 import org.cdpg.dx.auth.model.DxRole;
 import org.cdpg.dx.auth.model.Scopes;
 import org.cdpg.dx.common.URNGenerator;
-import org.cdpg.dx.common.exception.DxAuthException;
 import org.cdpg.dx.common.exception.DxBadRequestException;
 import org.cdpg.dx.common.exception.DxConflictException;
 import org.cdpg.dx.common.exception.DxForbiddenException;
@@ -143,11 +142,12 @@ public class ItemController implements ApiController {
   public void register(RouterBuilder builder) {
     Handler<RoutingContext> assetManagementAccess =
         AuthorizationHandler.forScopes(
-            Scopes.OWN_ASSET_MANAGEMENT, Scopes.ORG_ASSET_MANAGEMENT, Scopes.ASSET_MANAGEMENT);
+            Scopes.OWN_ASSET_MANAGEMENT, Scopes.ORG_ASSET_MANAGEMENT, Scopes.ASSET_MANAGEMENT,
+            Scopes.ORG_ASSET_PUBLISH);
     Handler<RoutingContext> assetManagementAndPublishAccess =
         AuthorizationHandler.forScopes(
             Scopes.OWN_ASSET_MANAGEMENT, Scopes.ORG_ASSET_MANAGEMENT, Scopes.ASSET_MANAGEMENT,
-            Scopes.ASSET_PUBLISH);
+            Scopes.ASSET_PUBLISH, Scopes.ORG_ASSET_PUBLISH);
     Handler<RoutingContext> providerScriptAccess =
         AuthorizationHandler.forScopes(Scopes.OWN_ASSET_MANAGEMENT);
 
