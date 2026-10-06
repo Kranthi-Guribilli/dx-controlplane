@@ -507,9 +507,9 @@ public class ItemServiceImpl implements ItemService {
 
     JsonArray scopes = patchItemRequest.getAllowedScopes();
     QueryModel queryModel;
-    if (scopes.contains(Scopes.ASSET_MANAGEMENT)) {
+    if (scopes.contains(Scopes.ASSET_MANAGEMENT) || scopes.contains(Scopes.ASSET_PUBLISH)) {
       queryModel = queryDecoder.getItemIdQueryModel(patchItemRequest.getItemId());
-    } else if (scopes.contains(Scopes.ORG_ASSET_MANAGEMENT)) {
+    } else if (scopes.contains(Scopes.ORG_ASSET_MANAGEMENT) || scopes.contains(Scopes.ORG_ASSET_PUBLISH)) {
       queryModel =
           queryDecoder.getItemIdOrgIdQueryModel(
               patchItemRequest.getItemId(), patchItemRequest.getOrgId());
@@ -529,9 +529,9 @@ public class ItemServiceImpl implements ItemService {
               if (result.getDocId() == null) {
                 String errorMsg;
 
-                if (scopes.contains(Scopes.ASSET_MANAGEMENT)) {
+                if (scopes.contains(Scopes.ASSET_MANAGEMENT) || scopes.contains(Scopes.ASSET_PUBLISH)) {
                   errorMsg = "Item not found for update";
-                } else if (scopes.contains(Scopes.ORG_ASSET_MANAGEMENT)) {
+                } else if (scopes.contains(Scopes.ORG_ASSET_MANAGEMENT) || scopes.contains(Scopes.ORG_ASSET_PUBLISH)) {
                   errorMsg = "No item found for update under your organization";
                 } else if (scopes.contains(Scopes.OWN_ASSET_MANAGEMENT)) {
                   errorMsg = "No item found owned by you for update";
