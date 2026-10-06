@@ -161,29 +161,40 @@ public class DelegationServiceImpl implements DelegationService {
     LOGGER.info("orgId is {} (wildcardDelegation={})", orgId, isWildcardDelegation);
     String highestRole = getHighestRole(delegatorRoles);
 
-    Future<DelegationGrant> flow;
+    Future<DelegationGrant> flow =
+        keycloakUserService
+            .getUserById(delegateId)
+            .compose(
+                delegateUser -> {
+                  if (!delegateUser.account_enabled()) {
+                    return Future.failedFuture(
+                        new DxForbiddenException(
+                            "Cannot create delegation for a deactivated user"));
+                  }
 
-    if (isWildcardDelegation) {
-      flow =
-          delegationGrantDAO
-              .create(delegationGrant)
-              .compose(
-                  created ->
-                      insertWildcardConstraint(
-                              created.delegationId(), highestRole, delegationGrant.expiryAt())
-                          .map(v -> created));
+                  if (isWildcardDelegation) {
+                    return delegationGrantDAO
+                        .create(delegationGrant)
+                        .compose(
+                            created ->
+                                insertWildcardConstraint(
+                                        created.delegationId(),
+                                        highestRole,
+                                        delegationGrant.expiryAt())
+                                    .map(v -> created));
+                  }
 
-    } else {
-      flow =
-          delegationValidator
-              .validateEntityOwnership(delegationGrantBody, orgId, roleConstraints)
-              .compose(v -> delegationGrantDAO.create(delegationGrant))
-              .compose(
-                  created ->
-                      insertScopeConstraints(
-                              created.delegationId(), roleConstraints, delegationGrant.expiryAt())
-                          .map(v -> created));
-    }
+                  return delegationValidator
+                      .validateEntityOwnership(delegationGrantBody, orgId, roleConstraints)
+                      .compose(v -> delegationGrantDAO.create(delegationGrant))
+                      .compose(
+                          created ->
+                              insertScopeConstraints(
+                                      created.delegationId(),
+                                      roleConstraints,
+                                      delegationGrant.expiryAt())
+                                  .map(v -> created));
+                });
 
     return flow.compose(
             created ->
