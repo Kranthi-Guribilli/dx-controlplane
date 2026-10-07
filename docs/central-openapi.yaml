@@ -3109,7 +3109,7 @@ paths:
             curl --location --request POST 'https://${HOSTNAME}/iudx/v2/auth/credit/request' \
             --header 'Authorization: Bearer <your-token>' \
             --header 'Content-Type: application/json' \
-            --data '{"additional_info": {"purpose": "research", "description": "Data analysis project"}}'
+            --data '{"additionalInfo": {"purpose": "research", "description": "Data analysis project"}}'
       security:
         - authorization: []
     put:
