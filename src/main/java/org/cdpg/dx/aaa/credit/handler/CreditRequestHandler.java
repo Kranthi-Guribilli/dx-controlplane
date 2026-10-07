@@ -70,6 +70,13 @@ public class CreditRequestHandler {
 
               creditRequestJson.put("user_name", keycloakUser.name());
 
+              // API accepts camelCase additionalInfo; model/DB use additional_info
+              JsonObject additionalInfo =
+                  (JsonObject) creditRequestJson.remove("additionalInfo");
+              if (additionalInfo != null) {
+                creditRequestJson.put(ADDITONAL_INFO, additionalInfo);
+              }
+
               CreditRequest creditRequest = CreditRequest.fromJson(creditRequestJson);
 
               return creditService.createCreditRequest(creditRequest);
