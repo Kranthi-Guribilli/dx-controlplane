@@ -26,6 +26,7 @@ import org.cdpg.dx.database.postgres.models.PaginatedResult;
 import org.cdpg.dx.database.postgres.models.QueryResult;
 import org.cdpg.dx.database.postgres.models.UpdateQuery;
 import org.cdpg.dx.database.postgres.service.PostgresService;
+import org.cdpg.dx.database.postgres.util.ConditionBuilder;
 
 public class DelegationGrantDAOImpl extends AbstractBaseDAO<DelegationGrant> implements DelegationGrantDAO {
 
@@ -44,8 +45,20 @@ public class DelegationGrantDAOImpl extends AbstractBaseDAO<DelegationGrant> imp
   @Override
   public Future<PaginatedResult<DelegationGrant>> getAllWithFilters(PaginatedRequest request) {
     Object statusFilter = request.filters() != null ? request.filters().get(STATUS) : null;
+    LOGGER.debug(
+        "Delegation list request - filters: {}, temporal: {}",
+        request.filters(),
+        request.temporalRequests());
     if (statusFilter == null) {
       return super.getAllWithFilters(request);
+    }
+
+    // The request builder passes query params as a list, e.g. status=[expired].
+    if (statusFilter instanceof List<?> values) {
+      if (values.size() != 1) {
+        return super.getAllWithFilters(request);
+      }
+      statusFilter = values.get(0);
     }
 
     String status = String.valueOf(statusFilter);
