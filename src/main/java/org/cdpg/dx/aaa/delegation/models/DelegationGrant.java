@@ -1,20 +1,16 @@
 package org.cdpg.dx.aaa.delegation.models;
 
-import io.vertx.core.json.JsonArray;
+import static org.cdpg.dx.common.util.DateTimeHelper.FORMATTER;
+import static org.cdpg.dx.common.util.DateTimeHelper.parseDateTime;
+import static org.cdpg.dx.common.util.ValidationUtils.requireNonNull;
+
 import io.vertx.core.json.JsonObject;
+import java.time.LocalDateTime;
+import java.util.*;
 import org.cdpg.dx.aaa.delegation.util.Constants;
 import org.cdpg.dx.aaa.delegation.util.Status;
 import org.cdpg.dx.common.exception.DxValidationException;
 import org.cdpg.dx.database.postgres.base.entity.BaseEntity;
-
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static org.cdpg.dx.aaa.delegation.util.Constants.ACTIVE;
-import static org.cdpg.dx.aaa.delegation.util.Status.APPROVED;
-import static org.cdpg.dx.common.util.DateTimeHelper.FORMATTER;
-import static org.cdpg.dx.common.util.DateTimeHelper.parseDateTime;
-import static org.cdpg.dx.common.util.ValidationUtils.requireNonNull;
 
 public record DelegationGrant(
   UUID delegationId,
@@ -30,18 +26,36 @@ public record DelegationGrant(
   public static DelegationGrant fromJson(JsonObject json) {
     try {
       return new DelegationGrant(
-        json.getString("delegation_id") != null ? UUID.fromString(json.getString("delegation_id")) : null,
-        requireNonNull(UUID.fromString(json.getString("delegator_id")), "delegator_id"),
-        requireNonNull(UUID.fromString(json.getString("delegate_id")), "delegate_id"),
-        requireNonNull(json.getString("justification"), "justification"),
-        parseDateTime(json.getString("expiry_at")),
-        json.getString("status") != null ? json.getString("status") : Status.ACTIVE.getStatus(),
-        parseDateTime(json.getString("created_at")),
-        parseDateTime(json.getString("revoked_at"))
-      );
+          json.getString("delegation_id") != null
+              ? UUID.fromString(json.getString("delegation_id"))
+              : null,
+          requireNonNull(UUID.fromString(json.getString("delegator_id")), "delegator_id"),
+          requireNonNull(UUID.fromString(json.getString("delegate_id")), "delegate_id"),
+          requireNonNull(json.getString("justification"), "justification"),
+          parseDateTime(json.getString("expiry_at")),
+          effectiveStatus(
+              json.getString("status") != null
+                  ? json.getString("status")
+                  : Status.ACTIVE.getStatus(),
+              parseDateTime(json.getString("expiry_at"))),
+          parseDateTime(json.getString("created_at")),
+          parseDateTime(json.getString("revoked_at")));
     } catch (Exception e) {
       throw new DxValidationException("Invalid or missing field: " + e.getMessage());
     }
+  }
+
+  /**
+   * The stored status is never moved from {@code active} to {@code expired}, so an active grant
+   * whose {@code expiry_at} has passed is reported as {@code expired} when read.
+   */
+  public static String effectiveStatus(String status, LocalDateTime expiryAt) {
+    if (Status.ACTIVE.getStatus().equalsIgnoreCase(status)
+        && expiryAt != null
+        && !expiryAt.isAfter(LocalDateTime.now())) {
+      return Status.EXPIRED.getStatus();
+    }
+    return status;
   }
 
   public static DelegationGrant fromRequestJson(JsonObject json) {
