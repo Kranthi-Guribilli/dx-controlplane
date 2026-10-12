@@ -2,7 +2,6 @@ package org.cdpg.dx.aaa.item.service;
 
 import static org.cdpg.dx.acl.accessRequest.config.Constants.VERIFY_API_PATH;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.ACCESS;
-import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.CONSTRAINTS;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.EMAIL;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.FIRST_NAME;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.LAST_NAME;
@@ -133,36 +132,41 @@ public class PolicyVerifyServiceImpl implements PolicyVerifyService {
 
                 if (status == 200) {
                   JsonObject body = httpResponse.bodyAsJsonObject();
-                  JsonObject result = body.getJsonObject(RESULT);
+                  // result may be a single object or a list of policies (DX APD returns a list)
+                  List<JsonObject> results = extractResults(body.getValue(RESULT));
 
-                  String decision = result.getString(TYPE);
+                  List<VerifyPolicyDto> allowedPolicies =
+                      results.stream()
+                          .filter(
+                              result ->
+                                  VERIFY_SUCCESS_URN
+                                      .getUrn()
+                                      .equalsIgnoreCase(result.getString(TYPE)))
+                          .map(VerifyPolicyDto::new)
+                          .toList();
 
-                  if (VERIFY_SUCCESS_URN.getUrn().equalsIgnoreCase(decision)) {
-                    JsonObject constraintsObj = result.getJsonObject(CONSTRAINTS);
-
-                    JsonArray accessArray = null;
-
-                    if (constraintsObj != null) {
-                      accessArray = constraintsObj.getJsonArray(ACCESS);
-                    }
-
-                    VerifyPolicyDto policyDto = new VerifyPolicyDto(result);
-
-                    LOGGER.info(
-                        "APD allowed access for user {}, constraints: {}",
-                        requester.sub(),
-                        accessArray != null ? accessArray.encode() : "none");
+                  if (!allowedPolicies.isEmpty()) {
+                    allowedPolicies.forEach(
+                        policyDto -> {
+                          JsonObject constraintsObj = policyDto.getConstraints();
+                          JsonArray accessArray =
+                              constraintsObj != null ? constraintsObj.getJsonArray(ACCESS) : null;
+                          LOGGER.info(
+                              "APD allowed access for user {}, policyId={}, constraints: {}",
+                              requester.sub(),
+                              policyDto.getPolicyId(),
+                              accessArray != null ? accessArray.encode() : "none");
+                        });
 
                     LOGGER.debug(
-                        "External APD verify response: 1 policy found, policyId={}",
-                        policyDto.getPolicyId());
+                        "External APD verify response: {} policies found", allowedPolicies.size());
 
-                    return Future.succeededFuture(List.of(policyDto));
+                    return Future.succeededFuture(allowedPolicies);
                   }
 
                   // Policy evaluated but denied
                   LOGGER.warn(
-                      "APD denied access for user {}: decision={}", requester.sub(), decision);
+                      "APD denied access for user {}: result={}", requester.sub(), results);
 
                   return Future.failedFuture(
                       new DxForbiddenException("Access denied by APD decision"));
@@ -207,6 +211,19 @@ public class PolicyVerifyServiceImpl implements PolicyVerifyService {
                     new DxForbiddenException("APD verification failed: " + failure.getMessage()));
               });
     }
+  }
+
+  private static List<JsonObject> extractResults(Object result) {
+    if (result instanceof JsonObject obj) {
+      return List.of(obj);
+    }
+    if (result instanceof JsonArray arr) {
+      return arr.stream()
+          .filter(JsonObject.class::isInstance)
+          .map(JsonObject.class::cast)
+          .toList();
+    }
+    return List.of();
   }
 
   // Helper to convert DxUser → APD user block
