@@ -34,6 +34,7 @@ import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_ITEM_ID;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_STATUS;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_UPDATED_AT;
 import static org.cdpg.dx.acl.accessRequest.util.Constants.API_TO_DB_MAP;
+import static org.cdpg.dx.database.postgres.util.Constants.DEFAULT_SORTING_FIELD;
 import static org.cdpg.dx.database.postgres.util.Constants.DEFAULT_SORTING_ORDER;
 
 public class UserHandler {
@@ -182,6 +183,9 @@ public class UserHandler {
     PaginatedRequest request =
         PaginationRequestBuilder.from(ctx)
             .additionalFilters(additionalFilters)
+            .apiToDbMap(Map.of("createdAt", CREATED_AT, "updatedAt", UPDATED_AT))
+            .defaultSort(DEFAULT_SORTING_FIELD, DEFAULT_SORTING_ORDER)
+            .allowedSortFields(Set.of("createdAt", "updatedAt"))
             .build();
 
     userService
