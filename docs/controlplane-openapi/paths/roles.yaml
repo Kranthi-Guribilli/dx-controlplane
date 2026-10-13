@@ -446,7 +446,15 @@
     parameters:
     - $ref: ../components/parameters.yaml#/PageParam
     - $ref: ../components/parameters.yaml#/SizeParam
-    - $ref: ../components/parameters.yaml#/SortingParam
+    - name: sort
+      in: query
+      description: 'Sort results by up to 3 fields, separated by a semicolon (`;`). Each field uses the format `fieldName:asc`
+        or `fieldName:desc`. Only `createdAt` and `updatedAt` are supported for this endpoint; any other field returns 400 Bad
+        Request. Defaults to `createdAt:desc` when omitted.'
+      required: false
+      schema:
+        type: string
+      example: createdAt:desc
     security:
     - authorization: []
     responses:
