@@ -11,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import org.cdpg.dx.aaa.organization.handler.OrganizationReportHandler;
 import org.cdpg.dx.apiserver.ApiController;
 import org.cdpg.dx.auth.authorization.handler.AuthorizationHandler;
+import org.cdpg.dx.auth.authorization.model.ScopeRule;
 import org.cdpg.dx.auth.model.Scopes;
 
 public class OrganizationReportController implements ApiController {
@@ -67,10 +68,23 @@ public class OrganizationReportController implements ApiController {
   @Override
   public void register(RouterBuilder builder) {
 
-    Handler<RoutingContext> cosAdminAccess = AuthorizationHandler.forScopes(Scopes.ROLE_MANAGEMENT);
+    Handler<RoutingContext> cosAdminAccess =
+        AuthorizationHandler.forScopes(Scopes.ROLE_MANAGEMENT, Scopes.USER_MANAGEMENT,
+            Scopes.ORG_MANAGEMENT);
+    // Org join / provider role request reports back the org admin's "User Requests" panel, so
+    // they accept the same scope as the list APIs they export (org admin or a delegate holding
+    // org-user-management), restricted to the caller's own organisation in the handler.
+    Handler<RoutingContext> orgUserRequestReportAccess =
+        AuthorizationHandler.forScopes(Scopes.ROLE_MANAGEMENT, Scopes.ORG_MANAGEMENT,
+            Scopes.ORG_USER_MANAGEMENT);
+    // Platform-wide request reports require the same scope as the list APIs they export.
+    Handler<RoutingContext> orgManagementAccess = AuthorizationHandler.forScopes(Scopes.ORG_MANAGEMENT);
+    Handler<RoutingContext> userManagementAccess =
+        AuthorizationHandler.forScopes(Scopes.USER_MANAGEMENT);
 
     builder
         .operation(OP_ORG_CREATE_REQUEST_REPORT)
+        .handler(orgManagementAccess)
         .handler(organizationReportHandler::getOrganizationCreateReport);
 
     builder
@@ -80,20 +94,22 @@ public class OrganizationReportController implements ApiController {
 
     builder
         .operation(OP_ORG_JOIN_REQUEST_REPORT)
-        .handler(cosAdminAccess)
+        .handler(orgUserRequestReportAccess)
         .handler(organizationReportHandler::getOrganizationJoinReport);
 
     builder
         .operation(OP_COMPUTE_ROLE_REQUEST_REPORT)
+        .handler(userManagementAccess)
         .handler(organizationReportHandler::getComputeRoleReport);
 
     builder
         .operation(OP_PROVIDER_ROLE_REQUEST_REPORT)
-        .handler(cosAdminAccess)
+        .handler(orgUserRequestReportAccess)
         .handler(organizationReportHandler::getProviderRequestReport);
 
     builder
         .operation(OP_CREDIT_REQUEST_REPORT)
+        .handler(userManagementAccess)
         .handler(organizationReportHandler::getCreditRequestReport);
   }
 }
