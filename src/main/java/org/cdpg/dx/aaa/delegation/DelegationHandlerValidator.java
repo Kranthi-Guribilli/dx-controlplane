@@ -13,6 +13,7 @@ import org.apache.logging.log4j.Logger;
 import org.cdpg.dx.auth.authorization.registry.SystemRoleScopeMap;
 import org.cdpg.dx.auth.model.DxRole;
 import org.cdpg.dx.common.exception.DxBadRequestException;
+import org.cdpg.dx.common.exception.DxForbiddenException;
 import org.cdpg.dx.common.model.DxUser;
 
 public class DelegationHandlerValidator {
@@ -66,7 +67,7 @@ public class DelegationHandlerValidator {
       //      }
       //      else
       if (!delegatorRoles.contains(role)) {
-        throw new DxBadRequestException("The delegator/user doesnot have the role "+ role);
+        throw new DxForbiddenException("The delegator/user doesnot have the role "+ role);
       }
 
       JsonArray constraints = roleObj.getJsonArray("constraints");
@@ -89,7 +90,7 @@ public class DelegationHandlerValidator {
             .map(SystemRoleScopeMap::getScopes)
             .orElse(Set.of());
         if (!allowedScopes.contains(scope)) {
-          throw new DxBadRequestException("The role that the user is giving doesnt allow the scope " + scope);
+          throw new DxForbiddenException("The role that the user is giving doesnt allow the scope " + scope);
         }
 
         // ---------- Entity pairing validation ----------

@@ -756,7 +756,7 @@ paths:
                 type: string
                 example: Asset request updated successfully
         '400':
-          description: Bad Request – Schema validation or invalid status
+          description: Bad Request – Schema validation, invalid status, or the request is no longer pending
           content:
             application/json:
               schema:
@@ -2087,7 +2087,7 @@ paths:
     get:
       summary: Get the current user's compute role request
       description: |
-        Returns the compute role request submitted by the currently authenticated user. Returns 400 if no request is found. Requires an authenticated user token.
+        Returns the compute role request submitted by the currently authenticated user. Returns 404 if no request is found. Requires an authenticated user token.
         **Log Type:** `COMPUTE`
       tags:
         - Compute APIs
@@ -2169,18 +2169,22 @@ paths:
                       additionalInfo: null
                       createdAt: '2025-06-04T10:54:53.301846'
                       updatedAt: '2025-06-04T10:54:53.301846'
-        '400':
-          description: Bad Request - No compute request found or invalid parameters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/generalBadRequest'
         '401':
           description: Unauthorized - Token invalid or expired
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Unauthorized'
+        '404':
+          description: Not Found - The user has not submitted a compute role request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFound'
+              example:
+                type: urn:dx:controlPlane:notFound
+                title: Not Found
+                detail: 'No pending compute request found for userId: 436cb796-5826-458b-a914-a54721f70997'
   /iudx/v2/auth/compute/requests:
     get:
       summary: Get all compute role requests (COS Admin)

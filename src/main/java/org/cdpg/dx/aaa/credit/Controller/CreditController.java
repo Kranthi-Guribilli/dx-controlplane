@@ -37,7 +37,7 @@ public class CreditController implements ApiController {
   @Override
   public void register(RouterBuilder routerBuilder) {
 
-    var selfAccess = AuthorizationHandler.forScopes(Scopes.DATA_ACCESS);
+    //var selfAccess = AuthorizationHandler.forScopes(Scopes.DATA_ACCESS);
     var adminAccess = AuthorizationHandler.forScopes(Scopes.USER_MANAGEMENT);
     var computeAccess = AuthorizationHandler.forScopes(Scopes.COMPUTE_MANAGEMENT);
 
@@ -57,13 +57,13 @@ public class CreditController implements ApiController {
     routerBuilder
       .operation("get-auth-v2-user-credit")
       .handler(auditingHandler::handleApiAudit)
-      .handler(selfAccess)
+      //.handler(selfAccess)
       .handler(creditRequestHandler::getUserCreditRequests);
 
     routerBuilder
       .operation("delete-auth-v2-user-credit")
       .handler(auditingHandler::handleApiAudit)
-      .handler(selfAccess)
+      //.handler(selfAccess)
       .handler(creditRequestHandler::deletePendingCreditRequest);
 
 
@@ -88,7 +88,7 @@ public class CreditController implements ApiController {
     routerBuilder
       .operation("post-auth-v2-compute-role-request")
       .handler(auditingHandler::handleApiAudit)
-      .handler(selfAccess)
+      //.handler(selfAccess)
       .handler(kycVerification(isKycRequired))
       .handler(computeRoleHandler::createComputeRoleRequest);
 
@@ -102,13 +102,13 @@ public class CreditController implements ApiController {
     routerBuilder
       .operation("get-auth-v2-user-compute-role-request")
       .handler(auditingHandler::handleApiAudit)
-      .handler(selfAccess)
+      //.handler(selfAccess)
       .handler(computeRoleHandler::getComputeRequests);
 
     routerBuilder
       .operation("delete-auth-v2-user-compute-role-request")
       .handler(auditingHandler::handleApiAudit)
-      .handler(selfAccess)
+      //.handler(selfAccess)
       .handler(computeRoleHandler::deletePendingComputeRequests);
 
     routerBuilder

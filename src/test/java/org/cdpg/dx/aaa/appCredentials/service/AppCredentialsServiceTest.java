@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +29,7 @@ import org.cdpg.dx.aaa.appCredentials.model.AppCredentials;
 import org.cdpg.dx.aaa.appCredentials.service.impl.AppCredentialsServiceImpl;
 import org.cdpg.dx.aaa.delegation.DelegationValidator;
 import org.cdpg.dx.aaa.user.service.UserService;
+import org.cdpg.dx.common.exception.DxForbiddenException;
 import org.cdpg.dx.common.exception.DxNotFoundException;
 import org.cdpg.dx.databroker.service.DataBrokerService;
 import org.cdpg.dx.common.request.PaginatedRequest;
@@ -224,6 +226,46 @@ class AppCredentialsServiceTest {
             verify(appCredentialsDAO).delete(appId);
           });
     }
+
+    @Test
+    @DisplayName("should fail with 404 when the app does not exist")
+    void deleteApp_notFound(VertxTestContext ctx) {
+      UUID userId = UUID.randomUUID();
+      UUID appId = UUID.randomUUID();
+
+      when(appCredentialsDAO.getAllWithFilters(anyMap()))
+          .thenReturn(Future.succeededFuture(List.of()));
+
+      Future<Boolean> future = appCredentialsService.deleteApp(userId, appId);
+
+      assertFutureFailure(
+          future,
+          ctx,
+          err -> {
+            assertThat(err).isInstanceOf(DxNotFoundException.class);
+            verify(appCredentialsDAO, never()).delete(any());
+          });
+    }
+
+    @Test
+    @DisplayName("should fail with 403 when the app belongs to another user")
+    void deleteApp_notOwner(VertxTestContext ctx) {
+      UUID appId = UUID.randomUUID();
+      AppCredentials app = buildAppCredentials(appId, UUID.randomUUID());
+
+      when(appCredentialsDAO.getAllWithFilters(anyMap()))
+          .thenReturn(Future.succeededFuture(List.of(app)));
+
+      Future<Boolean> future = appCredentialsService.deleteApp(UUID.randomUUID(), appId);
+
+      assertFutureFailure(
+          future,
+          ctx,
+          err -> {
+            assertThat(err).isInstanceOf(DxForbiddenException.class);
+            verify(appCredentialsDAO, never()).delete(any());
+          });
+    }
   }
 
   @Nested
@@ -239,6 +281,8 @@ class AppCredentialsServiceTest {
 
       AppCredentials updatedApp = buildAppCredentials(appId, userId);
 
+      when(appCredentialsDAO.getAllWithFilters(anyMap()))
+          .thenReturn(Future.succeededFuture(List.of(updatedApp)));
       when(appCredentialsDAO.update(anyMap(), anyMap()))
           .thenReturn(Future.succeededFuture(updatedApp));
 
@@ -249,6 +293,45 @@ class AppCredentialsServiceTest {
           ctx,
           result -> {
             assertThat(result).isTrue();
+          });
+    }
+
+    @Test
+    @DisplayName("should fail with 404 when the app does not exist")
+    void updateAppStatus_notFound(VertxTestContext ctx) {
+      when(appCredentialsDAO.getAllWithFilters(anyMap()))
+          .thenReturn(Future.succeededFuture(List.of()));
+
+      Future<Boolean> future =
+          appCredentialsService.changeAppStatus(UUID.randomUUID(), UUID.randomUUID(), "active");
+
+      assertFutureFailure(
+          future,
+          ctx,
+          err -> {
+            assertThat(err).isInstanceOf(DxNotFoundException.class);
+            verify(appCredentialsDAO, never()).update(anyMap(), anyMap());
+          });
+    }
+
+    @Test
+    @DisplayName("should fail with 403 when the app belongs to another user")
+    void updateAppStatus_notOwner(VertxTestContext ctx) {
+      UUID appId = UUID.randomUUID();
+      AppCredentials app = buildAppCredentials(appId, UUID.randomUUID());
+
+      when(appCredentialsDAO.getAllWithFilters(anyMap()))
+          .thenReturn(Future.succeededFuture(List.of(app)));
+
+      Future<Boolean> future =
+          appCredentialsService.changeAppStatus(UUID.randomUUID(), appId, "active");
+
+      assertFutureFailure(
+          future,
+          ctx,
+          err -> {
+            assertThat(err).isInstanceOf(DxForbiddenException.class);
+            verify(appCredentialsDAO, never()).update(anyMap(), anyMap());
           });
     }
   }

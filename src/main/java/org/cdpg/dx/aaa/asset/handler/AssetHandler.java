@@ -220,13 +220,17 @@ public class AssetHandler {
     }
 
     keycloakUserService.getUserById(userId).compose(v->{
-      if(v.roles().contains("cos_admin"))
+      if(!v.roles().contains("cos_admin"))
+        return Future.<Boolean>failedFuture(new DxForbiddenException("User is not authorized to update asset request status"));
+
+      // Only a pending request can be decided. A rejected request stays as history; the user
+      // raises a new request instead of an old one being re-approved.
+      return assetService.getAssetRequestDetailsById(requestId).compose(existing -> {
+        if (!Status.PENDING.getStatus().equals(existing.status()))
+          return Future.<Boolean>failedFuture(new DxBadRequestException(
+            "Only pending asset requests can be approved or rejected"));
         return assetService.updateAssetRequestStatus(requestId,status);
-      else
-      {
-        ctx.fail(new DxForbiddenException("User is not authorized to update asset request status"));
-        return Future.failedFuture(new DxForbiddenException("User is not authorized to update asset request status"));
-      }
+      });
     }).onSuccess(updatedAssetRequest -> {
 //      AuditLog auditLog = AuditingHelper.createAuditLog(ctx.user(),
 //        RoutingContextHelper.getRequestPath(ctx), "PUT", "Update Asset Request Status");
