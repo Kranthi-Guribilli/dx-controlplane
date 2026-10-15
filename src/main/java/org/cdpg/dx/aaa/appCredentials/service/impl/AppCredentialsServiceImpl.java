@@ -12,8 +12,6 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Supplier;
-
-import io.vertx.ext.auth.User;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.logging.log4j.LogManager;
@@ -24,12 +22,11 @@ import org.cdpg.dx.aaa.appCredentials.model.AppConstraints;
 import org.cdpg.dx.aaa.appCredentials.model.AppCredentialResponse;
 import org.cdpg.dx.aaa.appCredentials.model.AppCredentials;
 import org.cdpg.dx.aaa.appCredentials.service.AppCredentialsService;
-import org.cdpg.dx.aaa.delegation.DelegationHandlerValidator;
 import org.cdpg.dx.aaa.delegation.DelegationValidator;
-import org.cdpg.dx.aaa.delegation.models.DelegationScopeConstraint;
 import org.cdpg.dx.aaa.user.service.UserService;
 import org.cdpg.dx.common.exception.BaseDxException;
 import org.cdpg.dx.common.exception.DxBadRequestException;
+import org.cdpg.dx.common.exception.DxForbiddenException;
 import org.cdpg.dx.common.exception.DxNotFoundException;
 import org.cdpg.dx.common.exception.DxUnauthorizedException;
 import org.cdpg.dx.common.model.DxUser;
@@ -262,26 +259,13 @@ public class AppCredentialsServiceImpl implements AppCredentialsService {
   @Override
   public Future<Boolean> deleteApp(UUID userId, UUID appId) {
 
-    Map<String, Object> filter =
-        Map.of(
-            USER_ID, userId.toString(),
-            APP_ID, appId.toString());
-
-    return appCredentialsDAO
-        .getAllWithFilters(filter)
+    return getOwnedApp(userId, appId)
+        .compose(app -> appCredentialsDAO.delete(appId))
         .compose(
-            apps -> {
-              if (apps.isEmpty()) {
-                return Future.failedFuture(
-                    new DxNotFoundException(
-                        "No appCredentials found for userId " + userId + " and appId " + appId));
-              }
-              return appCredentialsDAO.delete(appId);
-            })
-        .compose(deleted -> {
-          publishRevocation(appId.toString());
-          return Future.succeededFuture(deleted);
-        });
+            deleted -> {
+              publishRevocation(appId.toString());
+              return Future.succeededFuture(deleted);
+            });
   }
 
 
@@ -297,19 +281,42 @@ public class AppCredentialsServiceImpl implements AppCredentialsService {
       STATUS, status
     );
 
+    return getOwnedApp(userId, appId)
+        .compose(app -> appCredentialsDAO.update(inFilter, updateFilter))
+        .compose(
+            apps -> {
+              if (apps == null) {
+                return Future.failedFuture(
+                    new DxNotFoundException(
+                        "No appCredentials found for userId " + userId + " and appId " + appId));
+              }
+              if ("revoked".equalsIgnoreCase(status)) {
+                publishRevocation(appId.toString());
+              }
+              return Future.succeededFuture(true);
+            });
+  }
+
+  /**
+   * Loads the app and checks the caller owns it: an unknown appId is 404, while an app that belongs
+   * to another user is 403.
+   */
+  private Future<AppCredentials> getOwnedApp(UUID userId, UUID appId) {
     return appCredentialsDAO
-      .update(inFilter, updateFilter)
-      .compose(apps -> {
-        if (apps == null) {
-          return Future.failedFuture(
-            new DxNotFoundException(
-              "No appCredentials found for userId " + userId + " and appId " + appId));
-        }
-        if ("revoked".equalsIgnoreCase(status)) {
-          publishRevocation(appId.toString());
-        }
-        return Future.succeededFuture(true);
-      });
+        .getAllWithFilters(Map.of(APP_ID, appId.toString()))
+        .compose(
+            apps -> {
+              if (apps.isEmpty()) {
+                return Future.failedFuture(
+                    new DxNotFoundException("No appCredentials found for appId " + appId));
+              }
+              AppCredentials app = apps.get(0);
+              if (!userId.equals(app.userId())) {
+                return Future.failedFuture(
+                    new DxForbiddenException("User is not authorized to modify this app"));
+              }
+              return Future.succeededFuture(app);
+            });
   }
 
   private void publishRevocation(String appId) {

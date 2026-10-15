@@ -364,7 +364,7 @@ class AssetServiceTest {
   class GetAssetRequestById {
 
     @Test
-    @DisplayName("Success - should return true when asset request exists for user")
+    @DisplayName("Success - should return true when an active asset request exists for user")
     void testGetById_exists(VertxTestContext testContext) {
       // Arrange
       UUID requestId = UUID.randomUUID();
@@ -374,7 +374,8 @@ class AssetServiceTest {
 
       Map<String, Object> expectedFilter = Map.of(
         ASSET_ID, requestId.toString(),
-        USER_ID, userId.toString()
+        USER_ID, userId.toString(),
+        STATUS, List.of(Status.PENDING.getStatus(), Status.GRANTED.getStatus())
       );
 
       when(assetRequestDAO.getAllWithFilters(expectedFilter))
@@ -394,7 +395,7 @@ class AssetServiceTest {
     }
 
     @Test
-    @DisplayName("Success - should return false when no asset request exists for user")
+    @DisplayName("Success - should return false when no active (pending/granted) asset request exists for user")
     void testGetById_notExists(VertxTestContext testContext) {
       // Arrange
       UUID requestId = UUID.randomUUID();
@@ -402,7 +403,8 @@ class AssetServiceTest {
 
       Map<String, Object> expectedFilter = Map.of(
         ASSET_ID, requestId.toString(),
-        USER_ID, userId.toString()
+        USER_ID, userId.toString(),
+        STATUS, List.of(Status.PENDING.getStatus(), Status.GRANTED.getStatus())
       );
 
       when(assetRequestDAO.getAllWithFilters(expectedFilter))
@@ -430,7 +432,8 @@ class AssetServiceTest {
 
       Map<String, Object> expectedFilter = Map.of(
         ASSET_ID, requestId.toString(),
-        USER_ID, userId.toString()
+        USER_ID, userId.toString(),
+        STATUS, List.of(Status.PENDING.getStatus(), Status.GRANTED.getStatus())
       );
 
       when(assetRequestDAO.getAllWithFilters(expectedFilter))
@@ -458,7 +461,8 @@ class AssetServiceTest {
 
       Map<String, Object> expectedFilter = Map.of(
         ASSET_ID, requestId.toString(),
-        USER_ID, userId.toString()
+        USER_ID, userId.toString(),
+        STATUS, List.of(Status.PENDING.getStatus(), Status.GRANTED.getStatus())
       );
 
       when(assetRequestDAO.getAllWithFilters(expectedFilter))

@@ -239,7 +239,7 @@
               type: string
               example: Asset request updated successfully
       '400':
-        description: Bad Request – Schema validation or invalid status
+        description: Bad Request – Schema validation, invalid status, or the request is no longer pending
         content:
           application/json:
             schema:
