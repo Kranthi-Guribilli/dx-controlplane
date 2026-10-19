@@ -104,6 +104,10 @@ public class OrganizationControllerFactory {
 
     DeptAdminHandler deptAdminHandler = new DeptAdminHandler(organizationService, urnGenerator);
 
+    DeptAdminAccessHandler deptAdminAccess =
+        new DeptAdminAccessHandler(
+            organizationDAOFactory.organizationUserDAO(), organizationHierarchyService);
+
     /* =========================
      * Controller (ONLY wiring)
      * ========================= */
@@ -117,6 +121,7 @@ public class OrganizationControllerFactory {
         organizationHierarchyDefinitionHandler,
         deptAdminHandler,
         userHandler,
+        deptAdminAccess,
         auditingHandler,
         kycRequired);
   }
@@ -127,12 +132,17 @@ public class OrganizationControllerFactory {
       EmailComposer emailComposer,
       URNGenerator urnGenerator,
       AuditingHandler auditingHandler,
+      PostgresService pgService,
       Boolean kycRequired) {
 
     ProviderRoleHandler providerRoleHandler =
         new ProviderRoleHandler(organizationService, userService, emailComposer, urnGenerator);
 
-    return new ProviderController(providerRoleHandler, auditingHandler, kycRequired);
+    return new ProviderController(
+        providerRoleHandler,
+        DeptAdminAccessHandler.create(pgService),
+        auditingHandler,
+        kycRequired);
   }
 
   /* =========================

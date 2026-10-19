@@ -114,8 +114,10 @@ public class AccessRequestServiceImpl implements AccessRequestService {
               return organizationHierarchyService
                   .getDescendantNodeIds(organizationId, orgUser.adminOfNodeId())
                   .map(ids -> ids.stream().map(UUID::toString).collect(Collectors.toList()));
-            })
-        .recover(err -> Future.succeededFuture(null));
+            });
+    // No recover-to-null here: dept_admins reach approve/reject with org-admin
+    // authority, so a failed lookup must fail the request rather than silently
+    // lift their subtree restriction.
   }
 
   @Override
@@ -352,6 +354,7 @@ public class AccessRequestServiceImpl implements AccessRequestService {
                         // No existing policy → SAFE TO CREATE POLICY
                         return createPolicyForApproval(
                             request.getItemOrganizationId(),
+                            request.getItemHierarchyNodeId(),
                             request.getConsumerId(),
                             itemId.toString(),
                             ItemType.fromCatalogueItemType(request.getAssetType()),
@@ -568,6 +571,7 @@ public class AccessRequestServiceImpl implements AccessRequestService {
 
   private Future<UUID> createPolicyForApproval(
       String itemOrganizationId,
+      String itemHierarchyNodeId,
       String consumerId,
       String itemId,
       ItemType itemType,
@@ -585,6 +589,7 @@ public class AccessRequestServiceImpl implements AccessRequestService {
     request.setItemId(itemId);
     request.setItemType(itemType);
     request.setItemOrganizationId(itemOrganizationId);
+    request.setItemHierarchyNodeId(itemHierarchyNodeId);
     request.setRequestId(requestId);
     request.setPolicyType(policyType);
 

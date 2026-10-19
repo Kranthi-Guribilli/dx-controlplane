@@ -3028,3 +3028,410 @@
           application/json:
             schema:
               $ref: ../components/schemas/common.yaml#/unAuthorizedAccess
+/iudx/v2/auth/organisations/{id}/department/join_requests:
+  parameters:
+  - name: id
+    in: path
+    required: true
+    description: UUID of the organisation
+    schema:
+      type: string
+      format: uuid
+  get:
+    tags:
+    - Organisation APIs
+    summary: Get join requests for my department and its sub-departments (Dept Admin)
+    operationId: get-auth-v2-organisations-department-join-requests
+    description: |
+      Returns a paginated list of join requests whose requested department is the
+      department the caller administers or any of its sub-departments.
+      Restricted to `dept_admin` users; the caller's organisation (from token) must
+      match the `{id}` path parameter. Results are enriched with user role information.
+
+      **Log Type:** `USER_ACTION`
+    security:
+    - authorization: []
+    parameters:
+    - $ref: ../components/parameters.yaml#/DepartmentScopeParam
+    - $ref: ../components/parameters.yaml#/PageParam
+    - $ref: ../components/parameters.yaml#/SizeParam
+    - $ref: ../components/parameters.yaml#/SortingParam
+    - $ref: ../components/parameters.yaml#/StatusParam
+    x-codeSamples:
+    - lang: cURL
+      label: Get department join requests
+      source: |
+        curl --location 'https://${HOSTNAME}/iudx/v2/auth/organisations/{id}/department/join_requests?status=pending&page=1&size=10' \
+        --header 'Authorization: Bearer <your-token>'
+    responses:
+      '200':
+        description: Paginated list of join requests for the caller's department subtree
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  example: urn:dx:controlPlane:success
+                title:
+                  type: string
+                  example: Success
+                result:
+                  type: array
+                  items:
+                    allOf:
+                    - $ref: ../components/schemas/organisation.yaml#/OrgJoinRequestItem
+                    - type: object
+                      properties:
+                        roles:
+                          type: array
+                          items:
+                            type: string
+                          description: Keycloak roles of the user
+                        accountEnabled:
+                          type: boolean
+                          description: Whether the user's account is active in Keycloak
+                paginationInfo:
+                  $ref: ../components/schemas/pagination.yaml#/PaginationInfo
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/Unauthorized
+      '403':
+        description: Forbidden - Caller is not a department admin of this organisation
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/Forbidden
+/iudx/v2/auth/organisations/{id}/department/users:
+  parameters:
+  - name: id
+    in: path
+    required: true
+    description: UUID of the organisation
+    schema:
+      type: string
+      format: uuid
+  get:
+    tags:
+    - Organisation APIs
+    summary: Get users in my department and its sub-departments (Dept Admin)
+    operationId: get-auth-v2-org-department-users
+    description: |
+      Returns a paginated list of organisation members assigned to the caller's
+      department or any of its sub-departments. The caller's organisation ID (from
+      token) must match the `{id}` path parameter. Results are enriched with user
+      role information from Keycloak.
+
+      Restricted to `dept_admin` users -- the org_admin uses the organisation-level
+      endpoint instead. Results cover the department the caller administers and
+      all of its sub-departments.
+
+      **Log Type:** `USER_ACTION`
+    security:
+    - authorization: []
+    parameters:
+    - $ref: ../components/parameters.yaml#/DepartmentScopeParam
+    - $ref: ../components/parameters.yaml#/PageParam
+    - $ref: ../components/parameters.yaml#/SizeParam
+    - $ref: ../components/parameters.yaml#/SortingParam
+    responses:
+      '200':
+        description: Paginated list of users in the organisation
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  example: urn:dx:controlPlane:success
+                title:
+                  type: string
+                  example: Success
+                result:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      organizationId:
+                        type: string
+                        format: uuid
+                      userId:
+                        type: string
+                        format: uuid
+                      userName:
+                        type: string
+                      role:
+                        type: string
+                        enum: [member, admin]
+                        description: Role of the user within the organisation
+                      jobTitle:
+                        type: string
+                      empId:
+                        type: string
+                      orgManagerPhoneNo:
+                        type: string
+                        nullable: true
+                      officialEmail:
+                        type: string
+                      createdAt:
+                        type: string
+                        format: date-time
+                      updatedAt:
+                        type: string
+                        format: date-time
+                      roles:
+                        type: array
+                        items:
+                          type: string
+                        description: Platform-level Keycloak roles of the user
+                      accountEnabled:
+                        type: boolean
+                paginationInfo:
+                  $ref: ../components/schemas/pagination.yaml#/PaginationInfo
+            example:
+              type: urn:dx:controlPlane:success
+              title: Success
+              result:
+              - id: 9f1a2b3c-4d5e-6789-abcd-ef0123456789
+                organizationId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                userId: c908f4ed-69ef-4d27-8e50-8f95f89b6c4d
+                userName: John Doe
+                role: member
+                jobTitle: Software Engineer
+                empId: EMP001
+                officialEmail: john@techsolutions.com
+                createdAt: '2025-06-04T10:54:53.301846'
+                updatedAt: '2025-06-04T10:54:53.301846'
+                roles: [consumer]
+                accountEnabled: true
+              paginationInfo:
+                page: 1
+                size: 10
+                totalCount: 8
+                totalPages: 1
+                hasNext: false
+                hasPrevious: false
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/Unauthorized
+      '403':
+        description: Forbidden - Caller's org ID does not match path parameter
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/Forbidden
+            example:
+              type: urn:dx:controlPlane:forbidden
+              title: Forbidden
+              detail: User does not have the required role.
+/iudx/v2/auth/organization/department/provider_role/requests:
+  get:
+    tags:
+    - Organisation APIs
+    summary: Get provider role requests for my department and its sub-departments (Dept Admin)
+    operationId: get-auth-v2-department-provider-requests
+    description: |
+      Returns a paginated list of provider role requests whose requested department
+      is the caller's department or one of its sub-departments, enriched with user
+      roles and join request details.
+
+      Restricted to `dept_admin` users -- the org_admin uses the organisation-level
+      endpoint instead. Results cover the department the caller administers and
+      all of its sub-departments.
+
+      **Log Type:** `USER_ACTION`
+    security:
+    - authorization: []
+    parameters:
+    - $ref: ../components/parameters.yaml#/DepartmentScopeParam
+    - $ref: ../components/parameters.yaml#/PageParam
+    - $ref: ../components/parameters.yaml#/SizeParam
+    - $ref: ../components/parameters.yaml#/SortingParam
+    - $ref: ../components/parameters.yaml#/StatusParam
+    responses:
+      '200':
+        description: Paginated list of provider role requests for the organisation
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  example: urn:dx:controlPlane:success
+                title:
+                  type: string
+                  example: Success
+                result:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      userId:
+                        type: string
+                        format: uuid
+                      orgId:
+                        type: string
+                        format: uuid
+                        nullable: true
+                      providerType:
+                        type: string
+                        enum: [org, platform]
+                      status:
+                        type: string
+                        enum: [pending, granted, rejected]
+                      createdAt:
+                        type: string
+                        format: date-time
+                      updatedAt:
+                        type: string
+                        format: date-time
+                      roles:
+                        type: array
+                        items:
+                          type: string
+                        description: Platform-level Keycloak roles of the requesting user
+                      accountEnabled:
+                        type: boolean
+                      userName:
+                        type: string
+                        description: User name from join request (if available)
+                      jobTitle:
+                        type: string
+                        description: Job title from join request (if available)
+                      empId:
+                        type: string
+                        description: Employee ID from join request (if available)
+                paginationInfo:
+                  $ref: ../components/schemas/pagination.yaml#/PaginationInfo
+            example:
+              type: urn:dx:controlPlane:success
+              title: Success
+              result:
+              - id: 5b6c7d8e-9f0a-1b2c-3d4e-5f6a7b8c9d0e
+                userId: c908f4ed-69ef-4d27-8e50-8f95f89b6c4d
+                orgId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                providerType: org
+                status: pending
+                createdAt: '2025-06-04T10:54:53.301846'
+                roles: [consumer]
+                accountEnabled: true
+                userName: John Doe
+                jobTitle: Software Engineer
+                empId: EMP001
+              paginationInfo:
+                page: 1
+                size: 10
+                totalCount: 3
+                totalPages: 1
+                hasNext: false
+                hasPrevious: false
+      '400':
+        description: Bad Request - User not part of any organisation
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/generalBadRequest
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/Unauthorized
+/iudx/v2/auth/organizations/{organization_id}/hierarchy/department:
+  parameters:
+    - name: organization_id
+      in: path
+      required: true
+      description: UUID of the organisation.
+      schema:
+        type: string
+        format: uuid
+
+  get:
+    tags:
+      - Organisation APIs
+    summary: Get my department and its sub-departments (Dept Admin)
+    operationId: get-auth-v2-organisation-hierarchy-my-department
+    description: |
+      Returns the department the caller administers followed by all of its
+      sub-departments, ordered by path (parents precede children). The caller's
+      organisation ID must match the `{organization_id}` path parameter.
+
+      Restricted to `dept_admin` users -- the org_admin uses the organisation-level
+      endpoint instead. Results cover the department the caller administers and
+      all of its sub-departments.
+
+      **Log Type:** `USER_ACTION`
+    security:
+      - authorization: []
+    responses:
+      '200':
+        description: List of organisation departments
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  example: urn:dx:controlPlane:success
+                title:
+                  type: string
+                  example: Success
+                result:
+                  type: array
+                  items:
+                    $ref: ../components/schemas/organisation.yaml#/OrganizationDepartment
+            example:
+              type: urn:dx:controlPlane:success
+              title: Success
+              result:
+                - id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                  organizationId: 4fa85f64-5717-4562-b3fc-2c963f66afa7
+                  parentId: null
+                  name: Engineering
+                  level: 1
+                  path: engineering
+                  createdAt: '2026-10-04T10:54:53.301846'
+                  updatedAt: '2026-10-04T10:54:53.301846'
+                - id: 5fa85f64-5717-4562-b3fc-2c963f66afa8
+                  organizationId: 4fa85f64-5717-4562-b3fc-2c963f66afa7
+                  parentId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                  name: Data Platform
+                  level: 2
+                  path: engineering.data_platform
+                  createdAt: '2026-10-04T10:54:53.301846'
+                  updatedAt: '2026-10-04T10:54:53.301846'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/Unauthorized
+      '403':
+        description: Forbidden - Caller is not authorised to access the organisation hierarchy
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/Forbidden
+      '404':
+        description: Not Found - Organisation does not exist
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas/common.yaml#/NotFound

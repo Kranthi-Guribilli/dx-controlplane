@@ -54,6 +54,8 @@ import org.cdpg.dx.aaa.item.service.ItemService;
 import org.cdpg.dx.aaa.item.service.ScriptGenerationService;
 import org.cdpg.dx.aaa.item.util.*;
 import org.cdpg.dx.aaa.organization.dao.OrganizationUserDAO;
+import org.cdpg.dx.aaa.organization.handler.DeptAdminAccessHandler;
+import org.cdpg.dx.aaa.organization.models.DeptAdminScope;
 import org.cdpg.dx.aaa.organization.models.OrganizationUser;
 import org.cdpg.dx.aaa.organization.models.Role;
 import org.cdpg.dx.aaa.organization.service.OrganizationHierarchyService;
@@ -103,6 +105,7 @@ public class ItemController implements ApiController {
   private final PolicyService policyService;
   private final OrganizationUserDAO organizationUserDAO;
   private final OrganizationHierarchyService organizationHierarchyService;
+  private final DeptAdminAccessHandler deptAdminAccess;
 
   public ItemController(
       AuditingHandler auditingHandler,
@@ -145,6 +148,63 @@ public class ItemController implements ApiController {
             accessRequestDao, apdURL);
     this.organizationUserDAO = organizationUserDAO;
     this.organizationHierarchyService = organizationHierarchyService;
+    this.deptAdminAccess =
+        new DeptAdminAccessHandler(organizationUserDAO, organizationHierarchyService);
+  }
+
+  /**
+   * A dept_admin holds no org-level scope in their token, but may verify items owned by a
+   * department in their subtree -- and change nothing else on them. Such a patch is evaluated as
+   * the org_admin's would be (ORG_ASSET_PUBLISH added to its scopes), with
+   * {@code ItemServiceImpl.patchItem} restricting the match to the subtree via the request's
+   * deptScopedNodeIds.
+   */
+  private static boolean isDeptAdminVerification(
+      DeptAdminScope deptAdminScope, JsonArray allowedScopes, JsonObject body) {
+    return deptAdminScope != null
+        && !allowedScopes.contains(Scopes.ORG_ASSET_PUBLISH)
+        && body.containsKey(ITEM_STATUS)
+        && VERIFIED.equalsIgnoreCase(body.getString(ITEM_STATUS));
+  }
+
+  /** Builds the patch request, applying a dept_admin verification's subtree restriction. */
+  private Future<PatchItemRequest> buildPatchItemRequest(
+      String id,
+      String userId,
+      JsonObject body,
+      JsonArray allowedScopes,
+      List<String> roles,
+      DeptAdminScope deptAdminScope,
+      boolean deptAdminVerification) {
+    if (deptAdminVerification) {
+      JsonArray effectiveScopes = allowedScopes.copy().add(Scopes.ORG_ASSET_PUBLISH);
+      PatchItemRequest patchItemRequest =
+          new PatchItemRequest(
+              id,
+              deptAdminScope.organizationId().toString(),
+              userId,
+              body,
+              effectiveScopes,
+              roles);
+      patchItemRequest.setDeptScopedNodeIds(deptAdminScope.nodeIdStrings());
+      return Future.succeededFuture(patchItemRequest);
+    }
+
+    // Fetch orgId from Keycloak, then (for org-scoped admins) resolve whether
+    // the caller is a dept_admin who must be restricted to their own subtree.
+    return keycloakUserService
+        .getUserById(UUID.fromString(userId))
+        .compose(
+            keycloakUser -> {
+              String orgId = keycloakUser.organisationId();
+              return resolveDeptScopedNodeIds(orgId, userId)
+                  .map(deptScopedNodeIds -> {
+                    PatchItemRequest patchItemRequest =
+                        new PatchItemRequest(id, orgId, userId, body, allowedScopes, roles);
+                    patchItemRequest.setDeptScopedNodeIds(deptScopedNodeIds);
+                    return patchItemRequest;
+                  });
+            });
   }
 
   /**
@@ -188,6 +248,8 @@ public class ItemController implements ApiController {
         AuthorizationHandler.forScopes(
             Scopes.OWN_ASSET_MANAGEMENT, Scopes.ORG_ASSET_MANAGEMENT, Scopes.ASSET_MANAGEMENT,
             Scopes.ASSET_PUBLISH, Scopes.ORG_ASSET_PUBLISH);
+    // dept_admins may additionally reach the patch routes to verify items in their subtree
+    Handler<RoutingContext> patchAccess = deptAdminAccess.orElse(assetManagementAndPublishAccess);
     Handler<RoutingContext> providerScriptAccess =
         AuthorizationHandler.forScopes(Scopes.OWN_ASSET_MANAGEMENT);
 
@@ -219,13 +281,13 @@ public class ItemController implements ApiController {
     builder
         .operation(PATCH_ITEM_META_DATA)
         .handler(auditingHandler::handleApiAudit)
-        .handler(assetManagementAndPublishAccess)
+        .handler(patchAccess)
         .handler(this::handlePatchItemMetaData);
 
     builder
         .operation(PATCH_ITEM)
         .handler(auditingHandler::handleApiAudit)
-        .handler(assetManagementAndPublishAccess)
+        .handler(patchAccess)
         .handler(this::handlePatchItem);
 
     builder
@@ -381,14 +443,26 @@ public class ItemController implements ApiController {
       return;
     }
 
+    DeptAdminScope deptAdminScope = DeptAdminAccessHandler.scopeOf(ctx);
+    boolean deptAdminVerification =
+        isDeptAdminVerification(deptAdminScope, allowedScopes, body);
+
     if (body.containsKey(ITEM_STATUS)) {
       String itemStatus = body.getString(ITEM_STATUS);
 
-      if (VERIFIED.equalsIgnoreCase(itemStatus) && !hasOrgAssetPublishScope) {
+      if (VERIFIED.equalsIgnoreCase(itemStatus)
+          && !hasOrgAssetPublishScope
+          && !deptAdminVerification) {
         ctx.fail(new DxForbiddenException(
-            "Only org_admin can update itemStatus to VERIFIED"));
+            "Only org_admin or the item's dept_admin can update itemStatus to VERIFIED"));
         return;
       }
+    }
+
+    if (deptAdminVerification && !Set.of(ITEM_STATUS).containsAll(body.fieldNames())) {
+      ctx.fail(new DxForbiddenException(
+          "A dept_admin can only update itemStatus on items of their department"));
+      return;
     }
 
     if (!isAdmin) {
@@ -405,21 +479,9 @@ public class ItemController implements ApiController {
       }
     }
 
-    // Fetch orgId from Keycloak, then (for org-scoped admins) resolve whether
-    // the caller is a dept_admin who must be restricted to their own subtree.
-    keycloakUserService
-        .getUserById(UUID.fromString(userId))
-        .compose(
-            keycloakUser -> {
-              String orgId = keycloakUser.organisationId();
-              return resolveDeptScopedNodeIds(orgId, userId)
-                  .map(deptScopedNodeIds -> {
-                    PatchItemRequest patchItemRequest =
-                        new PatchItemRequest(id, orgId, userId, body, allowedScopes, dxUser.roles());
-                    patchItemRequest.setDeptScopedNodeIds(deptScopedNodeIds);
-                    return patchItemRequest;
-                  });
-            })
+    buildPatchItemRequest(
+            id, userId, body, allowedScopes, dxUser.roles(), deptAdminScope,
+            deptAdminVerification)
         .compose(itemService::patchItem)
         .onSuccess(
             elasticsearchResponse -> {
@@ -494,14 +556,26 @@ public class ItemController implements ApiController {
       return;
     }
 
+    DeptAdminScope deptAdminScope = DeptAdminAccessHandler.scopeOf(ctx);
+    boolean deptAdminVerification =
+        isDeptAdminVerification(deptAdminScope, allowedScopes, body);
+
     if (body.containsKey(ITEM_STATUS)) {
       String itemStatus = body.getString(ITEM_STATUS);
 
-      if (VERIFIED.equalsIgnoreCase(itemStatus) && !hasOrgAssetPublishScope) {
+      if (VERIFIED.equalsIgnoreCase(itemStatus)
+          && !hasOrgAssetPublishScope
+          && !deptAdminVerification) {
         ctx.fail(new DxForbiddenException(
-            "Only org_admin can update itemStatus to VERIFIED"));
+            "Only org_admin or the item's dept_admin can update itemStatus to VERIFIED"));
         return;
       }
+    }
+
+    if (deptAdminVerification && !Set.of(ITEM_STATUS).containsAll(body.fieldNames())) {
+      ctx.fail(new DxForbiddenException(
+          "A dept_admin can only update itemStatus on items of their department"));
+      return;
     }
 
     // Restricted fields
@@ -517,21 +591,9 @@ public class ItemController implements ApiController {
 
     body.put(LAST_UPDATED, getUtcDatetimeAsString());
 
-    // Fetch orgId from Keycloak, then (for org-scoped admins) resolve whether
-    // the caller is a dept_admin who must be restricted to their own subtree.
-    keycloakUserService
-        .getUserById(UUID.fromString(userId))
-        .compose(
-            keycloakUser -> {
-              String orgId = keycloakUser.organisationId();
-              return resolveDeptScopedNodeIds(orgId, userId)
-                  .map(deptScopedNodeIds -> {
-                    PatchItemRequest patchItemRequest =
-                        new PatchItemRequest(id, orgId, userId, body, allowedScopes, dxUser.roles());
-                    patchItemRequest.setDeptScopedNodeIds(deptScopedNodeIds);
-                    return patchItemRequest;
-                  });
-            })
+    buildPatchItemRequest(
+            id, userId, body, allowedScopes, dxUser.roles(), deptAdminScope,
+            deptAdminVerification)
         .compose(itemService::patchItem)
         .onSuccess(
             elasticsearchResponse -> {

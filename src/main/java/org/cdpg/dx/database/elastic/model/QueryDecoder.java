@@ -177,6 +177,16 @@ public class QueryDecoder {
     QueryModel boolQuery = new QueryModel(QueryType.BOOL);
     List<QueryModel> mustQueries = new ArrayList<>();
     mustQueries.add(orgMatchQuery);
+
+    // --- must: hierarchyNodeId in subtree (dept_admin callers only) ---
+    // Items with no hierarchyNodeId are intentionally never matched -- same
+    // policy as getItemIdOrgIdNodeIdsQueryModel.
+    if (request.getHierarchyNodeIds() != null) {
+      Map<String, Object> termsParams = new HashMap<>();
+      termsParams.put(FIELD, "hierarchyNodeId" + KEYWORD_KEY);
+      termsParams.put(VALUE, request.getHierarchyNodeIds());
+      mustQueries.add(new QueryModel(QueryType.TERMS, termsParams));
+    }
     boolQuery.setMustQueries(mustQueries);
 
     // --- must_not: ownerId == sub (only when filter_myassets=true) ---

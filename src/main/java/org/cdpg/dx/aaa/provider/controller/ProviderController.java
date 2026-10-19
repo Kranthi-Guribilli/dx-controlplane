@@ -7,6 +7,7 @@ import io.vertx.ext.web.openapi.RouterBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cdpg.dx.apiserver.ApiController;
+import org.cdpg.dx.aaa.organization.handler.DeptAdminAccessHandler;
 import org.cdpg.dx.aaa.provider.handler.ProviderRoleHandler;
 import org.cdpg.dx.auditing.handler.AuditingHandler;
 import org.cdpg.dx.auth.authorization.handler.AuthorizationHandler;
@@ -17,14 +18,17 @@ public class ProviderController implements ApiController {
   private static final Logger LOGGER = LogManager.getLogger(ProviderController.class);
 
   private final ProviderRoleHandler providerRoleHandler;
+  private final DeptAdminAccessHandler deptAdminAccess;
   private final AuditingHandler auditingHandler;
   private final Boolean isKycRequired;
 
   public ProviderController(
       ProviderRoleHandler providerRoleHandler,
+      DeptAdminAccessHandler deptAdminAccess,
       AuditingHandler auditingHandler,
       Boolean isKycRequired) {
     this.providerRoleHandler = providerRoleHandler;
+    this.deptAdminAccess = deptAdminAccess;
     this.auditingHandler = auditingHandler;
     this.isKycRequired = isKycRequired;
   }
@@ -34,6 +38,8 @@ public class ProviderController implements ApiController {
 
     var selfAccess = AuthorizationHandler.forScopes(Scopes.DATA_ACCESS);
     var orgAdminAccess = AuthorizationHandler.forScopes(Scopes.ORG_USER_MANAGEMENT);
+    // dept_admins may approve provider requests scoped to their department subtree
+    var orgOrDeptAdminAccess = deptAdminAccess.orElse(orgAdminAccess);
     var cosAdminAccess = AuthorizationHandler.forScopes(Scopes.USER_MANAGEMENT);
 
     /* =========================
@@ -70,9 +76,15 @@ public class ProviderController implements ApiController {
         .handler(providerRoleHandler::getOrgProviderRequest);
 
     routerBuilder
+        .operation(OP_GET_DEPT_PROVIDER_REQUESTS)
+        .handler(auditingHandler::handleApiAudit)
+        .handler(deptAdminAccess.required())
+        .handler(providerRoleHandler::getDepartmentProviderRequests);
+
+    routerBuilder
         .operation(OP_UPDATE_PROVIDER_REQUEST)
         .handler(auditingHandler::handleApiAudit)
-        .handler(orgAdminAccess)
+        .handler(orgOrDeptAdminAccess)
         .handler(providerRoleHandler::updateOrgProviderRequest);
 
     routerBuilder

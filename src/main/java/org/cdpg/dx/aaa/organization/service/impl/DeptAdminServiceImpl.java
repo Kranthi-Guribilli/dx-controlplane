@@ -201,7 +201,7 @@ public class DeptAdminServiceImpl implements DeptAdminService {
         .get(requestId)
         .compose(
             request -> {
-              if (request == null) {
+              if (request == null || !request.organizationId().equals(organizationId)) {
                 return Future.failedFuture(
                     new DxNotFoundException("Dept_admin request not found"));
               }

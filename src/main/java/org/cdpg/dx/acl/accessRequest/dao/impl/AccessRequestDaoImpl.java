@@ -128,8 +128,16 @@ public class AccessRequestDaoImpl extends AbstractBaseDAO<AccessRequestDto>
                   accessRequestDto.getProviderId() != null
                       && accessRequestDto.getProviderId().equals(providerId.toString());
 
+              // Nobody approves or rejects their own request -- an org_admin or a dept_admin
+              // of the item's department may also be the consumer who raised it.
+              boolean isOwnRequest =
+                  accessRequestDto.getConsumerId() != null
+                      && accessRequestDto.getConsumerId().equals(providerId.toString());
+
               boolean allowed;
-              if (providerOrganizationId == null) {
+              if (isOwnRequest) {
+                allowed = false;
+              } else if (providerOrganizationId == null) {
                 // independent provider: ownership is established by provider ID alone
                 allowed = doesProviderIdMatch;
               } else {
@@ -143,9 +151,9 @@ public class AccessRequestDaoImpl extends AbstractBaseDAO<AccessRequestDto>
                 // restricted to their own department subtree -- an item with no
                 // department (null) is intentionally never matched here, same
                 // as the item-patch policy, and stays a root-admin-only concern.
+                // An empty subtree matches nothing (deny), never "unrestricted".
                 boolean doesDeptMatch =
                     deptScopedNodeIds == null
-                        || deptScopedNodeIds.isEmpty()
                         || (accessRequestDto.getItemHierarchyNodeId() != null
                             && deptScopedNodeIds.contains(
                                 accessRequestDto.getItemHierarchyNodeId()));

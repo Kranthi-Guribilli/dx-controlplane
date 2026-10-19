@@ -28,6 +28,10 @@ public final class OperationIds {
       "post-auth-v2-organisations-join-requests";
 
   public static final String OP_GET_ORG_JOIN_REQUESTS = "get-auth-v2-organisations-join-requests";
+  public static final String OP_GET_DEPT_HIERARCHY =
+      "get-auth-v2-organisation-hierarchy-my-department";
+  public static final String OP_GET_DEPT_JOIN_REQUESTS =
+      "get-auth-v2-organisations-department-join-requests";
 
   public static final String OP_GET_USER_ORG_JOIN_REQUESTS =
       "get-auth-v2-user-organisations-join-requests";
@@ -58,6 +62,7 @@ public final class OperationIds {
    * ===================================================== */
 
   public static final String OP_GET_ORG_USERS = "get-auth-v2-org-users";
+  public static final String OP_GET_DEPT_USERS = "get-auth-v2-org-department-users";
 
   public static final String OP_GET_ORG_USER_INFO = "get-auth-v2-organisations-id-users-user_id";
 
@@ -104,6 +109,9 @@ public final class OperationIds {
   public static final String OP_CREATE_PROVIDER_REQUEST = "post-auth-v2-user-roles";
 
   public static final String OP_GET_PROVIDER_REQUEST = "get-auth-v2-provider-requests";
+
+  public static final String OP_GET_DEPT_PROVIDER_REQUESTS =
+      "get-auth-v2-department-provider-requests";
 
   public static final String OP_UPDATE_PROVIDER_REQUEST = "put-auth-v2-user-roles";
 
