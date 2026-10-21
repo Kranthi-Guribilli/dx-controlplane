@@ -2681,7 +2681,7 @@ paths:
                 title: Not Authorized
                 detail: Missing or invalid Bearer token
         '403':
-          description: Forbidden - Caller is not a department admin
+          description: Forbidden - Caller does not hold the dept-asset-management scope (not a department admin)
           content:
             application/json:
               schema:
@@ -2689,7 +2689,7 @@ paths:
               example:
                 type: urn:dx:aclApd:forbidden
                 title: Forbidden
-                detail: Only a department admin can access this endpoint
+                detail: User does not hold the required role
       x-codeSamples:
         - lang: cURL
           label: List policies of my sub-departments only

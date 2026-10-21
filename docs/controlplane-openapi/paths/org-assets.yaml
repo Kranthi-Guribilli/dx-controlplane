@@ -578,7 +578,7 @@
             schema:
               $ref: ../components/schemas/common.yaml#/Unauthorized
       '403':
-        description: Forbidden - User is not a department admin
+        description: Forbidden - Caller does not hold the dept-asset-management scope (not a department admin)
         content:
           application/json:
             schema:
@@ -586,7 +586,7 @@
             example:
               type: urn:dx:controlPlane:forbidden
               title: Forbidden
-              detail: Only a department admin can access this endpoint
+              detail: User does not hold the required role
     x-codeSamples:
     - lang: cURL
       label: get department assets with filters

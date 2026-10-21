@@ -8428,7 +8428,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Unauthorized'
         '403':
-          description: Forbidden - User is not a department admin
+          description: Forbidden - Caller does not hold the dept-asset-management scope (not a department admin)
           content:
             application/json:
               schema:
@@ -8436,7 +8436,7 @@ paths:
               example:
                 type: urn:dx:controlPlane:forbidden
                 title: Forbidden
-                detail: Only a department admin can access this endpoint
+                detail: User does not hold the required role
       x-codeSamples:
         - lang: cURL
           label: get department assets with filters
@@ -9936,7 +9936,10 @@ paths:
                           enum:
                             - member
                             - admin
-                          description: Role of the user within the organisation
+                            - dept_admin
+                          description: |
+                            Role of the user within the organisation. `dept_admin` administers
+                            the department in `adminOfNodeId` and all of its sub-departments.
                         jobTitle:
                           type: string
                         empId:
@@ -9946,6 +9949,20 @@ paths:
                           nullable: true
                         officialEmail:
                           type: string
+                        hierarchyNodeId:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          description: |
+                            Department the user belongs to. Omitted for organisations without
+                            departments.
+                        adminOfNodeId:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          description: |
+                            Department the user administers. Only present when `role` is
+                            `dept_admin`.
                         createdAt:
                           type: string
                           format: date-time
@@ -10068,7 +10085,10 @@ paths:
                           enum:
                             - member
                             - admin
-                          description: Role of the user within the organisation
+                            - dept_admin
+                          description: |
+                            Role of the user within the organisation. `dept_admin` administers
+                            the department in `adminOfNodeId` and all of its sub-departments.
                         jobTitle:
                           type: string
                         empId:
@@ -10078,6 +10098,20 @@ paths:
                           nullable: true
                         officialEmail:
                           type: string
+                        hierarchyNodeId:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          description: |
+                            Department the user belongs to. Omitted for organisations without
+                            departments.
+                        adminOfNodeId:
+                          type: string
+                          format: uuid
+                          nullable: true
+                          description: |
+                            Department the user administers. Only present when `role` is
+                            `dept_admin`.
                         createdAt:
                           type: string
                           format: date-time

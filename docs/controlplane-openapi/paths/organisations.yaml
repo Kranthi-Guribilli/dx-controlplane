@@ -1394,8 +1394,10 @@
                         type: string
                       role:
                         type: string
-                        enum: [member, admin]
-                        description: Role of the user within the organisation
+                        enum: [member, admin, dept_admin]
+                        description: |
+                          Role of the user within the organisation. `dept_admin` administers
+                          the department in `adminOfNodeId` and all of its sub-departments.
                       jobTitle:
                         type: string
                       empId:
@@ -1405,6 +1407,20 @@
                         nullable: true
                       officialEmail:
                         type: string
+                      hierarchyNodeId:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        description: |
+                          Department the user belongs to. Omitted for organisations without
+                          departments.
+                      adminOfNodeId:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        description: |
+                          Department the user administers. Only present when `role` is
+                          `dept_admin`.
                       createdAt:
                         type: string
                         format: date-time
@@ -3170,8 +3186,10 @@
                         type: string
                       role:
                         type: string
-                        enum: [member, admin]
-                        description: Role of the user within the organisation
+                        enum: [member, admin, dept_admin]
+                        description: |
+                          Role of the user within the organisation. `dept_admin` administers
+                          the department in `adminOfNodeId` and all of its sub-departments.
                       jobTitle:
                         type: string
                       empId:
@@ -3181,6 +3199,20 @@
                         nullable: true
                       officialEmail:
                         type: string
+                      hierarchyNodeId:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        description: |
+                          Department the user belongs to. Omitted for organisations without
+                          departments.
+                      adminOfNodeId:
+                        type: string
+                        format: uuid
+                        nullable: true
+                        description: |
+                          Department the user administers. Only present when `role` is
+                          `dept_admin`.
                       createdAt:
                         type: string
                         format: date-time
