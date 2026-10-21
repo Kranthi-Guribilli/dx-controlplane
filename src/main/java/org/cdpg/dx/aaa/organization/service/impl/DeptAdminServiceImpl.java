@@ -15,10 +15,12 @@ import org.cdpg.dx.aaa.organization.models.Status;
 import org.cdpg.dx.aaa.organization.service.DeptAdminService;
 import org.cdpg.dx.aaa.organization.service.OrganizationApprovalService;
 import org.cdpg.dx.aaa.organization.service.OrganizationHierarchyService;
+import org.cdpg.dx.auth.model.Scopes;
 import org.cdpg.dx.common.exception.DxConflictException;
 import org.cdpg.dx.common.exception.DxForbiddenException;
 import org.cdpg.dx.common.exception.DxNotFoundException;
 import org.cdpg.dx.common.exception.DxValidationException;
+import org.cdpg.dx.keycloak.service.KeycloakUserService;
 
 public class DeptAdminServiceImpl implements DeptAdminService {
 
@@ -26,16 +28,19 @@ public class DeptAdminServiceImpl implements DeptAdminService {
   private final OrganizationHierarchyService hierarchyService;
   private final DeptAdminRequestDAO deptAdminRequestDAO;
   private final OrganizationApprovalService organizationApprovalService;
+  private final KeycloakUserService keycloakUserService;
 
   public DeptAdminServiceImpl(
       OrganizationUserDAO organizationUserDAO,
       OrganizationHierarchyService hierarchyService,
       DeptAdminRequestDAO deptAdminRequestDAO,
-      OrganizationApprovalService organizationApprovalService) {
+      OrganizationApprovalService organizationApprovalService,
+      KeycloakUserService keycloakUserService) {
     this.organizationUserDAO = organizationUserDAO;
     this.hierarchyService = hierarchyService;
     this.deptAdminRequestDAO = deptAdminRequestDAO;
     this.organizationApprovalService = organizationApprovalService;
+    this.keycloakUserService = keycloakUserService;
   }
 
   @Override
@@ -122,7 +127,9 @@ public class DeptAdminServiceImpl implements DeptAdminService {
                       Constants.ROLE, Role.DEPT_ADMIN.getRoleName(),
                       Constants.ADMIN_OF_NODE_ID, departmentNodeId.toString());
 
-              return organizationUserDAO.update(conditionMap, updateFields);
+              return organizationUserDAO
+                  .update(conditionMap, updateFields)
+                  .compose(updated -> grantDeptAdminScopes(targetUserId, updated));
             });
   }
 
@@ -253,9 +260,21 @@ public class DeptAdminServiceImpl implements DeptAdminService {
                                       Constants.ADMIN_OF_NODE_ID,
                                           request.requestedNodeId().toString());
 
-                              return organizationUserDAO.update(userConditionMap, userUpdateFields);
+                              return organizationUserDAO
+                                  .update(userConditionMap, userUpdateFields)
+                                  .compose(
+                                      updated -> grantDeptAdminScopes(request.userId(), updated));
                             });
                   });
             });
+  }
+
+  /**
+   * Publishes the dept scopes to the user's Keycloak scope attribute so they appear in their
+   * token (the UI gates features on it). The backend itself authorizes dept_admins from the
+   * database -- see DeptAdminAccessHandler.
+   */
+  private Future<OrganizationUser> grantDeptAdminScopes(UUID userId, OrganizationUser updated) {
+    return keycloakUserService.addUserScopes(userId, Scopes.DEPT_ADMIN).map(updated);
   }
 }

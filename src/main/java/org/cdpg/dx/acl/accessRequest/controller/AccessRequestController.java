@@ -139,6 +139,16 @@ public class AccessRequestController implements ApiController {
         AuthorizationHandler.forScopesWithContext(
             ScopeRule.self(Scopes.OWN_ASSET_MANAGEMENT),
             ScopeRule.org(Scopes.ORG_ASSET_MANAGEMENT));
+    // DEPT must outrank SELF: a dept_admin who is also a provider holds OWN_ASSET_MANAGEMENT
+    Handler<RoutingContext> providerOrDeptAdminAccess =
+        deptAdminAccess.withDeptScopes(
+            AuthorizationHandler.forScopesWithContext(
+                ScopeRule.org(Scopes.ORG_ASSET_MANAGEMENT),
+                ScopeRule.dept(Scopes.DEPT_ASSET_MANAGEMENT),
+                ScopeRule.self(Scopes.OWN_ASSET_MANAGEMENT)));
+    Handler<RoutingContext> deptAdminAccessHandler =
+        deptAdminAccess.withDeptScopes(
+            AuthorizationHandler.forScopes(Scopes.DEPT_ASSET_MANAGEMENT));
     UserAccessHandler userAccessHandler =
         new UserAccessHandler(postgresService, keycloakUserService);
 
@@ -169,7 +179,7 @@ public class AccessRequestController implements ApiController {
     builder
         .operation(GET_ACCESS_REQUEST_FOR_DEPT_ADMIN_API)
         .handler(auditingHandler::handleApiAudit)
-        .handler(deptAdminAccess.required())
+        .handler(deptAdminAccessHandler)
         .handler(this::getDepartmentAccessRequestHandler);
 
     builder
@@ -188,7 +198,7 @@ public class AccessRequestController implements ApiController {
         .operation(UPDATE_ACCESS_REQUEST_API)
         .handler(auditingHandler::handleApiAudit)
         .handler(userAccessHandler)
-        .handler(deptAdminAccess.orElse(providerAdminAccess))
+        .handler(providerOrDeptAdminAccess)
         .handler(this::updateAccessRequestHandler);
 
     builder

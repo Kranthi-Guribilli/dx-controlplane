@@ -16,12 +16,13 @@ import io.vertx.ext.auth.User;
 import io.vertx.ext.web.RoutingContext;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.cdpg.dx.aaa.organization.dao.OrganizationUserDAO;
 import org.cdpg.dx.aaa.organization.models.DeptAdminScope;
 import org.cdpg.dx.aaa.organization.models.OrganizationUser;
 import org.cdpg.dx.aaa.organization.models.Role;
 import org.cdpg.dx.aaa.organization.service.OrganizationHierarchyService;
-import org.cdpg.dx.common.exception.DxForbiddenException;
+import org.cdpg.dx.auth.model.Scopes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ class DeptAdminAccessHandlerTest {
   @Mock private OrganizationUserDAO organizationUserDAO;
   @Mock private OrganizationHierarchyService hierarchyService;
   @Mock private RoutingContext ctx;
-  @Mock private Handler<RoutingContext> fallback;
+  @Mock private Handler<RoutingContext> scopeCheck;
 
   private DeptAdminAccessHandler guard;
 
@@ -50,8 +51,10 @@ class DeptAdminAccessHandlerTest {
     guard = new DeptAdminAccessHandler(organizationUserDAO, hierarchyService);
   }
 
+  private JsonObject principal;
+
   private void givenPrincipal(JsonObject extraClaims) {
-    JsonObject principal =
+    principal =
         new JsonObject()
             .put("sub", userId.toString())
             .put("scopes", new JsonArray().add("data-access"))
@@ -66,89 +69,93 @@ class DeptAdminAccessHandlerTest {
   }
 
   @Test
-  @DisplayName("a dept_admin passes with their department subtree published")
-  void deptAdminPassesWithScope() {
+  @DisplayName("a dept_admin is granted the dept scopes with their department subtree published")
+  void deptAdminGrantedScopes() {
     givenPrincipal(new JsonObject().put("organisation_id", orgId.toString()));
     when(organizationUserDAO.getByOrganizationIdAndUserId(orgId, userId))
         .thenReturn(Future.succeededFuture(member(Role.DEPT_ADMIN, adminNode)));
     when(hierarchyService.getDescendantNodeIds(orgId, adminNode))
         .thenReturn(Future.succeededFuture(List.of(adminNode, childNode)));
 
-    guard.orElse(fallback).handle(ctx);
+    guard.withDeptScopes(scopeCheck).handle(ctx);
 
     ArgumentCaptor<DeptAdminScope> scope = ArgumentCaptor.forClass(DeptAdminScope.class);
     verify(ctx).put(eq(DeptAdminAccessHandler.DEPT_ADMIN_SCOPE_KEY), scope.capture());
-    verify(ctx).next();
-    verifyNoInteractions(fallback);
+    verify(scopeCheck).handle(ctx);
     assertThat(scope.getValue().organizationId()).isEqualTo(orgId);
     assertThat(scope.getValue().nodeIds()).containsExactly(adminNode, childNode);
+    assertThat(principal.getJsonArray("scopes").getList())
+        .containsExactlyInAnyOrderElementsOf(
+            Stream.concat(
+                    Stream.of("data-access"), Scopes.DEPT_ADMIN.stream())
+                .toList());
   }
 
   @Test
-  @DisplayName("a plain member falls through to the route's existing guard")
-  void memberFallsThrough() {
+  @DisplayName("a plain member reaches the scope check with only their token's scopes")
+  void memberNotGranted() {
     givenPrincipal(new JsonObject().put("organisation_id", orgId.toString()));
     when(organizationUserDAO.getByOrganizationIdAndUserId(orgId, userId))
         .thenReturn(Future.succeededFuture(member(Role.USER, null)));
 
-    guard.orElse(fallback).handle(ctx);
+    guard.withDeptScopes(scopeCheck).handle(ctx);
 
-    verify(fallback).handle(ctx);
-    verify(ctx, never()).next();
+    verify(scopeCheck).handle(ctx);
     verify(ctx, never()).put(any(), any());
+    assertThat(principal.getJsonArray("scopes").getList()).containsExactly("data-access");
   }
 
   @Test
-  @DisplayName("a caller with no organisation falls through without a membership lookup")
-  void noOrganisationFallsThrough() {
+  @DisplayName("an org_admin is not granted the dept scopes")
+  void orgAdminNotGranted() {
+    givenPrincipal(new JsonObject().put("organisation_id", orgId.toString()));
+    when(organizationUserDAO.getByOrganizationIdAndUserId(orgId, userId))
+        .thenReturn(Future.succeededFuture(member(Role.ADMIN, null)));
+
+    guard.withDeptScopes(scopeCheck).handle(ctx);
+
+    verify(scopeCheck).handle(ctx);
+    assertThat(principal.getJsonArray("scopes").getList()).containsExactly("data-access");
+  }
+
+  @Test
+  @DisplayName("a caller with no organisation reaches the scope check without a membership lookup")
+  void noOrganisationNotGranted() {
     givenPrincipal(new JsonObject());
 
-    guard.orElse(fallback).handle(ctx);
+    guard.withDeptScopes(scopeCheck).handle(ctx);
 
-    verify(fallback).handle(ctx);
+    verify(scopeCheck).handle(ctx);
     verifyNoInteractions(organizationUserDAO, hierarchyService);
   }
 
   @Test
-  @DisplayName("a delegated principal never resolves as dept_admin")
-  void delegateFallsThrough() {
+  @DisplayName("a delegated principal is never granted the dept scopes")
+  void delegateNotGranted() {
     givenPrincipal(
         new JsonObject()
             .put("organisation_id", orgId.toString())
             .put("delegatee_sub", UUID.randomUUID().toString()));
 
-    guard.orElse(fallback).handle(ctx);
+    guard.withDeptScopes(scopeCheck).handle(ctx);
 
-    verify(fallback).handle(ctx);
+    verify(scopeCheck).handle(ctx);
     verifyNoInteractions(organizationUserDAO, hierarchyService);
+    assertThat(principal.getJsonArray("scopes").getList()).containsExactly("data-access");
   }
 
   @Test
-  @DisplayName("a failed membership lookup fails the request instead of falling through")
+  @DisplayName("a failed membership lookup fails the request instead of reaching the scope check")
   void lookupFailureFailsClosed() {
     givenPrincipal(new JsonObject().put("organisation_id", orgId.toString()));
     RuntimeException dbError = new RuntimeException("db down");
     when(organizationUserDAO.getByOrganizationIdAndUserId(orgId, userId))
         .thenReturn(Future.failedFuture(dbError));
 
-    guard.orElse(fallback).handle(ctx);
+    guard.withDeptScopes(scopeCheck).handle(ctx);
 
     verify(ctx).fail(dbError);
-    verify(ctx, never()).next();
-    verifyNoInteractions(fallback);
-  }
-
-  @Test
-  @DisplayName("the dept_admin-only guard rejects everyone who is not a dept_admin")
-  void requiredRejectsNonDeptAdmin() {
-    givenPrincipal(new JsonObject().put("organisation_id", orgId.toString()));
-    when(organizationUserDAO.getByOrganizationIdAndUserId(orgId, userId))
-        .thenReturn(Future.succeededFuture(member(Role.ADMIN, null)));
-
-    guard.required().handle(ctx);
-
-    verify(ctx).fail(any(DxForbiddenException.class));
-    verify(ctx, never()).next();
+    verifyNoInteractions(scopeCheck);
   }
 
   @Test

@@ -2,6 +2,8 @@ package org.cdpg.dx.aaa.organization.handler;
 
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import java.util.HashMap;
 import java.util.List;
@@ -18,26 +20,26 @@ import org.cdpg.dx.aaa.organization.models.DeptAdminScope.DepartmentFilter;
 import org.cdpg.dx.aaa.organization.models.Role;
 import org.cdpg.dx.aaa.organization.service.OrganizationHierarchyService;
 import org.cdpg.dx.aaa.organization.service.impl.OrganizationHierarchyServiceImpl;
+import org.cdpg.dx.auth.model.Scopes;
 import org.cdpg.dx.common.exception.DxBadRequestException;
-import org.cdpg.dx.common.exception.DxForbiddenException;
 import org.cdpg.dx.common.model.DxUser;
 import org.cdpg.dx.common.util.RoutingContextHelper;
 import org.cdpg.dx.database.postgres.service.PostgresService;
+import org.cdpg.dx.keycloak.config.KeycloakConstants;
 
 /**
- * Route guard that lets a dept_admin reach org-admin endpoints.
+ * Grants the department-level scopes ({@link Scopes#DEPT_ADMIN}) to a dept_admin caller ahead of
+ * the route's {@code AuthorizationHandler} scope check.
  *
  * <p>dept_admin is an organization-membership role ({@code organization_users.role} +
- * {@code admin_of_node_id}), not a Keycloak realm role, so a dept_admin's token carries none of
- * the org-level scopes ({@code org-user-management}, {@code org-asset-publish}, ...) that the
- * plain {@code AuthorizationHandler} guards check. This guard resolves the caller's membership
- * from the database instead:
+ * {@code admin_of_node_id}), not a Keycloak realm role, so a dept_admin's token carries no
+ * department scopes. This handler resolves the caller's membership from the database instead:
  *
  * <ul>
- *   <li>caller is a dept_admin of their token's organization -- passes, and their department
- *       subtree is published as a {@link DeptAdminScope} (see {@link #scopeOf}) that handlers
- *       must narrow every query/action to;
- *   <li>anyone else -- falls through to the route's existing guard, unchanged.
+ *   <li>caller is a dept_admin of their token's organization -- the dept scopes are added to
+ *       their principal, and their department subtree is published as a {@link DeptAdminScope}
+ *       (see {@link #scopeOf}) that handlers must narrow every query/action to;
+ *   <li>anyone else -- passes through unchanged, so only their token's own scopes count.
  * </ul>
  *
  * <p>Delegated and app-credential principals never resolve as dept_admin: a delegate must not
@@ -100,33 +102,35 @@ public class DeptAdminAccessHandler {
     return filters;
   }
 
-  /** Passes dept_admins (publishing their scope); everyone else goes through {@code fallback}. */
-  public Handler<RoutingContext> orElse(Handler<RoutingContext> fallback) {
+  /**
+   * Grants the dept scopes to a dept_admin caller (publishing their subtree), then runs {@code
+   * scopeCheck} -- the route's {@code AuthorizationHandler} guard -- for every caller.
+   */
+  public Handler<RoutingContext> withDeptScopes(Handler<RoutingContext> scopeCheck) {
     return ctx ->
         resolve(ctx)
             .onSuccess(
                 scope -> {
-                  if (scope == null) {
-                    fallback.handle(ctx);
-                    return;
+                  if (scope != null) {
+                    grantDeptScopes(ctx);
+                    ctx.put(DEPT_ADMIN_SCOPE_KEY, scope);
                   }
-                  ctx.put(DEPT_ADMIN_SCOPE_KEY, scope);
-                  ctx.next();
+                  scopeCheck.handle(ctx);
                 })
             .onFailure(ctx::fail);
   }
 
-  /** Passes dept_admins only (publishing their scope) -- for department-level endpoints. */
-  public Handler<RoutingContext> required() {
-    return orElse(
-        ctx ->
-            ctx.fail(
-                new DxForbiddenException("Only a department admin can access this endpoint")));
+  private static void grantDeptScopes(RoutingContext ctx) {
+    JsonObject principal = ctx.user().principal();
+    JsonArray scopes =
+        principal.getJsonArray(KeycloakConstants.CLAIM_SCOPES, new JsonArray()).copy();
+    Scopes.DEPT_ADMIN.stream().filter(s -> !scopes.contains(s)).forEach(scopes::add);
+    principal.put(KeycloakConstants.CLAIM_SCOPES, scopes);
   }
 
   private Future<DeptAdminScope> resolve(RoutingContext ctx) {
     if (ctx.user() == null) {
-      // Let the fallback guard produce its usual 401.
+      // Let the scope check produce its usual 401.
       return Future.succeededFuture(null);
     }
 

@@ -39,7 +39,13 @@ public class ProviderController implements ApiController {
     var selfAccess = AuthorizationHandler.forScopes(Scopes.DATA_ACCESS);
     var orgAdminAccess = AuthorizationHandler.forScopes(Scopes.ORG_USER_MANAGEMENT);
     // dept_admins may approve provider requests scoped to their department subtree
-    var orgOrDeptAdminAccess = deptAdminAccess.orElse(orgAdminAccess);
+    var orgOrDeptAdminAccess =
+        deptAdminAccess.withDeptScopes(
+            AuthorizationHandler.forScopes(
+                Scopes.ORG_USER_MANAGEMENT, Scopes.DEPT_PUBLISHER_MANAGEMENT));
+    var deptAdminOnlyAccess =
+        deptAdminAccess.withDeptScopes(
+            AuthorizationHandler.forScopes(Scopes.DEPT_PUBLISHER_MANAGEMENT));
     var cosAdminAccess = AuthorizationHandler.forScopes(Scopes.USER_MANAGEMENT);
 
     /* =========================
@@ -78,7 +84,7 @@ public class ProviderController implements ApiController {
     routerBuilder
         .operation(OP_GET_DEPT_PROVIDER_REQUESTS)
         .handler(auditingHandler::handleApiAudit)
-        .handler(deptAdminAccess.required())
+        .handler(deptAdminOnlyAccess)
         .handler(providerRoleHandler::getDepartmentProviderRequests);
 
     routerBuilder

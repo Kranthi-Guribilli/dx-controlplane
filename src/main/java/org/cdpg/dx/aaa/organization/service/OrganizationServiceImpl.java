@@ -81,7 +81,8 @@ public class OrganizationServiceImpl implements OrganizationService {
             factory.organizationUserDAO(),
             organizationHierarchyService,
             factory.deptAdminRequestDAO(),
-            organizationApprovalServiceImpl);
+            organizationApprovalServiceImpl,
+            keycloakUserService);
 
     this.lifecycle = lifecycleImpl;
     this.membership = membershipImpl;

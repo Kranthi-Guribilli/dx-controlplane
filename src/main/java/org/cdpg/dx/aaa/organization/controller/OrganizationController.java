@@ -67,7 +67,13 @@ public class OrganizationController implements ApiController {
             ScopeRule.org(Scopes.ORG_USER_MANAGEMENT));
     // org_admin, or a dept_admin -- whose actions the handlers/services then
     // narrow to their own department subtree (see DeptAdminAccessHandler).
-    var orgOrDeptAdminAccess = deptAdminAccess.orElse(orgAdminAccess);
+    var orgOrDeptAdminAccess =
+        deptAdminAccess.withDeptScopes(
+            AuthorizationHandler.forScopes(
+                Scopes.ORG_USER_MANAGEMENT, Scopes.DEPT_USER_MANAGEMENT));
+    var deptAdminOnlyAccess =
+        deptAdminAccess.withDeptScopes(
+            AuthorizationHandler.forScopes(Scopes.DEPT_USER_MANAGEMENT));
 
     /* =========================
      * Organization create request
@@ -124,7 +130,7 @@ public class OrganizationController implements ApiController {
     routerBuilder
         .operation(OP_GET_DEPT_JOIN_REQUESTS)
         .handler(auditingHandler::handleApiAudit)
-        .handler(deptAdminAccess.required())
+        .handler(deptAdminOnlyAccess)
         .handler(joinRequestHandler::getDepartmentJoinRequests);
 
     routerBuilder
@@ -192,7 +198,7 @@ public class OrganizationController implements ApiController {
     routerBuilder
         .operation(OP_GET_DEPT_USERS)
         .handler(auditingHandler::handleApiAudit)
-        .handler(deptAdminAccess.required())
+        .handler(deptAdminOnlyAccess)
         .handler(userHandler::getDepartmentUsers);
 
     routerBuilder
@@ -226,7 +232,7 @@ public class OrganizationController implements ApiController {
     routerBuilder
         .operation(OP_GET_DEPT_HIERARCHY)
         .handler(auditingHandler::handleApiAudit)
-        .handler(deptAdminAccess.required())
+        .handler(deptAdminOnlyAccess)
         .handler(hierarchyHandler::getDepartmentHierarchy);
 
     routerBuilder

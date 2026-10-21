@@ -13,6 +13,7 @@ import org.cdpg.dx.aaa.search.service.SearchService;
 import org.cdpg.dx.apiserver.ApiController;
 import org.cdpg.dx.auditing.handler.AuditingHandler;
 import org.cdpg.dx.auth.authorization.handler.AuthorizationHandler;
+import org.cdpg.dx.auth.model.Scopes;
 import org.cdpg.dx.auth.model.DxRole;
 import org.cdpg.dx.common.URNGenerator;
 import org.cdpg.dx.common.request.GetSearchRequestBuilder;
@@ -47,7 +48,9 @@ public class SearchController implements ApiController {
     this.auditingHandler = auditingHandler;
     this.urnGenerator = urnGenerator;
     this.keycloakUserService = keycloakUserService;
-    this.deptAdminAccessHandler = deptAdminAccess.required();
+    this.deptAdminAccessHandler =
+        deptAdminAccess.withDeptScopes(
+            AuthorizationHandler.forScopes(Scopes.DEPT_ASSET_MANAGEMENT));
   }
 
   @Override

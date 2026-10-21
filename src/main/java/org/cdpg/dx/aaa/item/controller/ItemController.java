@@ -153,8 +153,9 @@ public class ItemController implements ApiController {
   }
 
   /**
-   * A dept_admin holds no org-level scope in their token, but may verify items owned by a
-   * department in their subtree -- and change nothing else on them. Such a patch is evaluated as
+   * A dept_admin holds no org-level scope, only DEPT_ASSET_PUBLISH (granted by
+   * DeptAdminAccessHandler), which lets them verify items owned by a department in their subtree
+   * -- and change nothing else on them. Such a patch is evaluated as
    * the org_admin's would be (ORG_ASSET_PUBLISH added to its scopes), with
    * {@code ItemServiceImpl.patchItem} restricting the match to the subtree via the request's
    * deptScopedNodeIds.
@@ -162,6 +163,7 @@ public class ItemController implements ApiController {
   private static boolean isDeptAdminVerification(
       DeptAdminScope deptAdminScope, JsonArray allowedScopes, JsonObject body) {
     return deptAdminScope != null
+        && allowedScopes.contains(Scopes.DEPT_ASSET_PUBLISH)
         && !allowedScopes.contains(Scopes.ORG_ASSET_PUBLISH)
         && body.containsKey(ITEM_STATUS)
         && VERIFIED.equalsIgnoreCase(body.getString(ITEM_STATUS));
@@ -244,12 +246,12 @@ public class ItemController implements ApiController {
         AuthorizationHandler.forScopes(
             Scopes.OWN_ASSET_MANAGEMENT, Scopes.ORG_ASSET_MANAGEMENT, Scopes.ASSET_MANAGEMENT,
             Scopes.ORG_ASSET_PUBLISH);
-    Handler<RoutingContext> assetManagementAndPublishAccess =
-        AuthorizationHandler.forScopes(
-            Scopes.OWN_ASSET_MANAGEMENT, Scopes.ORG_ASSET_MANAGEMENT, Scopes.ASSET_MANAGEMENT,
-            Scopes.ASSET_PUBLISH, Scopes.ORG_ASSET_PUBLISH);
     // dept_admins may additionally reach the patch routes to verify items in their subtree
-    Handler<RoutingContext> patchAccess = deptAdminAccess.orElse(assetManagementAndPublishAccess);
+    Handler<RoutingContext> patchAccess =
+        deptAdminAccess.withDeptScopes(
+            AuthorizationHandler.forScopes(
+                Scopes.OWN_ASSET_MANAGEMENT, Scopes.ORG_ASSET_MANAGEMENT, Scopes.ASSET_MANAGEMENT,
+                Scopes.ASSET_PUBLISH, Scopes.ORG_ASSET_PUBLISH, Scopes.DEPT_ASSET_PUBLISH));
     Handler<RoutingContext> providerScriptAccess =
         AuthorizationHandler.forScopes(Scopes.OWN_ASSET_MANAGEMENT);
 

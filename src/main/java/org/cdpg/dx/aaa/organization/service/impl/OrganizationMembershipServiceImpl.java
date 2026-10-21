@@ -25,6 +25,7 @@ import org.cdpg.dx.aaa.organization.service.OrganizationApprovalService;
 import org.cdpg.dx.aaa.organization.service.OrganizationHierarchyService;
 import org.cdpg.dx.aaa.organization.service.OrganizationMembershipService;
 import org.cdpg.dx.auth.model.DxRole;
+import org.cdpg.dx.auth.model.Scopes;
 import org.cdpg.dx.common.exception.*;
 import org.cdpg.dx.common.request.PaginatedRequest;
 import org.cdpg.dx.common.util.ServiceErrorHelper;
@@ -485,9 +486,12 @@ public class OrganizationMembershipServiceImpl implements OrganizationMembership
       updateDataMap.put(Constants.ADMIN_OF_NODE_ID, null);
     }
 
-    return orgUserDAO.update(conditionMap, updateDataMap).map(
-      true
-    ).recover(ServiceErrorHelper.mapNotFound("No matching user found in organization"));
+    return orgUserDAO.update(conditionMap, updateDataMap)
+      .compose(updated -> role == Role.DEPT_ADMIN
+        ? Future.succeededFuture(true)
+        : keycloakUserService.removeUserScopes(userId, Scopes.DEPT_ADMIN))
+      .map(true)
+      .recover(ServiceErrorHelper.mapNotFound("No matching user found in organization"));
   }
 
   @Override
@@ -500,6 +504,7 @@ public class OrganizationMembershipServiceImpl implements OrganizationMembership
               "organisation_id", "",
               "organisation_name", ""
             ))
+            .compose(v -> keycloakUserService.removeUserScopes(userId, Scopes.DEPT_ADMIN))
             .map(v -> true);
         } else {
           return Future.succeededFuture(false);
@@ -517,6 +522,7 @@ public class OrganizationMembershipServiceImpl implements OrganizationMembership
               "organisation_name", ""
             ))
             .compose(v->keycloakUserService.removeRoleFromUser(userId, DxRole.PROVIDER))
+            .compose(v -> keycloakUserService.removeUserScopes(userId, Scopes.DEPT_ADMIN))
             .compose(ar-> itemService.ownerShipTransfer(userId.toString(), orgAdminId.toString(), orgId.toString()))
             .onFailure(err -> LOGGER.error("Failed to update user attributes in Keycloak after deleting organization user", err))
             .map(v -> true);

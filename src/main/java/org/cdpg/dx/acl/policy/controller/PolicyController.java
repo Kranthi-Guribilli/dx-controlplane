@@ -110,10 +110,16 @@ public class PolicyController implements ApiController {
     Handler<RoutingContext> verifyAccess =
         AuthorizationHandler.forScopes(
             Scopes.DATA_ACCESS, Scopes.OWN_ASSET_MANAGEMENT, Scopes.ORG_ASSET_MANAGEMENT);
+    // DEPT must outrank SELF: a dept_admin who is also a provider holds OWN_ASSET_MANAGEMENT
     Handler<RoutingContext> policyAdminAccess =
-        AuthorizationHandler.forScopesWithContext(
-            ScopeRule.self(Scopes.OWN_ASSET_MANAGEMENT),
-            ScopeRule.org(Scopes.ORG_ASSET_MANAGEMENT));
+        deptAdminAccess.withDeptScopes(
+            AuthorizationHandler.forScopesWithContext(
+                ScopeRule.org(Scopes.ORG_ASSET_MANAGEMENT),
+                ScopeRule.dept(Scopes.DEPT_ASSET_MANAGEMENT),
+                ScopeRule.self(Scopes.OWN_ASSET_MANAGEMENT)));
+    Handler<RoutingContext> deptAdminAccessHandler =
+        deptAdminAccess.withDeptScopes(
+            AuthorizationHandler.forScopes(Scopes.DEPT_ASSET_MANAGEMENT));
 
     Handler<RoutingContext> cosAdminAccessHandler =
         AuthorizationHandler.forScopes(Scopes.ASSET_MANAGEMENT);
@@ -139,7 +145,7 @@ public class PolicyController implements ApiController {
     builder
         .operation(CREATE_POLICY_API)
         .handler(auditingHandler::handleApiAudit)
-        .handler(deptAdminAccess.orElse(policyAdminAccess))
+        .handler(policyAdminAccess)
         .handler(userAccessHandler)
         .handler(this::handleCreatePolicy);
 
@@ -170,7 +176,7 @@ public class PolicyController implements ApiController {
     builder
         .operation(GET_POLICIES_FOR_DEPT_ADMIN_API)
         .handler(auditingHandler::handleApiAudit)
-        .handler(deptAdminAccess.required())
+        .handler(deptAdminAccessHandler)
         .handler(this::getDepartmentPoliciesHandler);
 
     builder
@@ -182,7 +188,7 @@ public class PolicyController implements ApiController {
     builder
         .operation(DELETE_POLICY_API)
         .handler(auditingHandler::handleApiAudit)
-        .handler(deptAdminAccess.orElse(policyAdminAccess))
+        .handler(policyAdminAccess)
         .handler(userAccessHandler)
         .handler(this::handleDeletePolicy);
 
