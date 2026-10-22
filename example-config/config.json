@@ -210,8 +210,12 @@
     {
       "grpcAllowedServiceClients": [
         "svc-dx-dataplane",
-        "svc-dx-dataplane-ogc"
+        "svc-dx-dataplane-ogc",
+        "svc-dx-marketplace-go"
       ],
+      "grpcRoleGrants": {
+        "svc-dx-marketplace-go": ["mor_admin", "seller"]
+      },
       "grpcPort": 9090,
       "id": "org.cdpg.dx.aaa.grpc.GrpcServerVerticle",
       "isWorkerVerticle": false,
