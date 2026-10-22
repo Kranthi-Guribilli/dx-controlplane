@@ -226,8 +226,12 @@
       "isWorkerVerticle": false,
       "grpcAllowedServiceClients": [
         "svc-dx-dataplane",
-        "svc-dx-dataplane-ogc"
+        "svc-dx-dataplane-ogc",
+        "svc-dx-marketplace-go"
       ],
+      "grpcRoleGrants": {
+        "svc-dx-marketplace-go": ["mor_admin", "seller"]
+      },
       "grpcPort": 9090,
       "keycloakJwksUrl": "https://<domain>/auth/realms/<tenantPrefix>/protocol/openid-connect/certs",
       "required": [
