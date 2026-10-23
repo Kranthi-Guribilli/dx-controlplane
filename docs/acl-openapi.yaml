@@ -647,6 +647,7 @@ paths:
               - REJECTED
               - WITHDRAWN
               - REVOKED
+              - EXPIRED
         - name: assetType
           in: query
           description: Type of the asset for which the access request is made. Displays all the access requests if assetType is not specified
@@ -796,6 +797,7 @@ paths:
               - REJECTED
               - WITHDRAWN
               - REVOKED
+              - EXPIRED
         - name: assetType
           in: query
           description: Type of the asset for which the access request is made. Displays all the access requests if assetType is not specified
@@ -912,6 +914,7 @@ paths:
               - REJECTED
               - WITHDRAWN
               - REVOKED
+              - EXPIRED
         - name: assetType
           in: query
           description: Type of the asset for which the access request is made. Displays all the access requests if assetType is not specified
@@ -1033,6 +1036,7 @@ paths:
               - REJECTED
               - WITHDRAWN
               - REVOKED
+              - EXPIRED
         - name: assetType
           in: query
           description: Type of the asset for which the access request is made. Displays all the access requests if assetType is not specified
@@ -1180,6 +1184,7 @@ paths:
               - REJECTED
               - WITHDRAWN
               - REVOKED
+              - EXPIRED
         - name: assetType
           in: query
           description: Type of the asset for which the access request is made. Displays all the access requests if assetType is not specified
@@ -1461,6 +1466,7 @@ paths:
               - REJECTED
               - WITHDRAWN
               - REVOKED
+              - EXPIRED
         - name: assetType
           in: query
           description: Type of the asset for which the access request is made. Displays all the access requests if assetType is not specified
@@ -2158,6 +2164,7 @@ paths:
             enum:
               - ACTIVE
               - DELETED
+              - EXPIRED
         - name: organizationId
           in: query
           description: Filter policies by organization ID of the asset. Displays all policies if not specified.
@@ -2261,6 +2268,7 @@ paths:
             enum:
               - ACTIVE
               - DELETED
+              - EXPIRED
         - name: organizationId
           in: query
           description: Filter policies by organization ID of the asset. Displays all policies if not specified.
@@ -2369,6 +2377,7 @@ paths:
             enum:
               - ACTIVE
               - DELETED
+              - EXPIRED
         - name: organizationId
           in: query
           description: Filter policies by organization ID of the asset. Displays all policies if not specified.
@@ -2476,6 +2485,7 @@ paths:
             enum:
               - ACTIVE
               - DELETED
+              - EXPIRED
         - name: organizationId
           in: query
           description: Filter policies by organization ID of the asset. Displays all policies if not specified.

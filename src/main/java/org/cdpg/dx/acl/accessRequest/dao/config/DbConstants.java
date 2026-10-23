@@ -3,6 +3,8 @@ package org.cdpg.dx.acl.accessRequest.dao.config;
 public class DbConstants {
   public static final String DB_REQUEST_ID = "request_id";
   public static final String DB_STATUS = "status";
+  // Derived from expiry_at for granted requests and active policies; never stored.
+  public static final String EXPIRED = "EXPIRED";
   public static final String DB_REQUEST_TYPE = "request_type";
   public static final String DB_ADDITIONAL_INFO = "additional_info";
   public static final String DB_CONSTRAINTS = "constraints";
