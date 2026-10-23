@@ -607,6 +607,7 @@
         - REJECTED
         - WITHDRAWN
         - REVOKED
+        - EXPIRED
     - name: assetType
       in: query
       description: Type of the asset for which the access request is made. Displays
@@ -767,6 +768,7 @@
         - REJECTED
         - WITHDRAWN
         - REVOKED
+        - EXPIRED
     - name: assetType
       in: query
       description: Type of the asset for which the access request is made. Displays
@@ -896,6 +898,7 @@
         - REJECTED
         - WITHDRAWN
         - REVOKED
+        - EXPIRED
     - name: assetType
       in: query
       description: Type of the asset for which the access request is made. Displays
@@ -1037,6 +1040,7 @@
         - REJECTED
         - WITHDRAWN
         - REVOKED
+        - EXPIRED
     - name: assetType
       in: query
       description: Type of the asset for which the access request is made. Displays
@@ -1197,6 +1201,7 @@
         - REJECTED
         - WITHDRAWN
         - REVOKED
+        - EXPIRED
     - name: assetType
       in: query
       description: Type of the asset for which the access request is made. Displays
@@ -1500,6 +1505,7 @@
         - REJECTED
         - WITHDRAWN
         - REVOKED
+        - EXPIRED
     - name: assetType
       in: query
       description: Type of the asset for which the access request is made. Displays

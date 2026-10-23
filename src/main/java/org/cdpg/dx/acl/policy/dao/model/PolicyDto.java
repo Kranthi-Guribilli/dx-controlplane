@@ -1,5 +1,6 @@
 package org.cdpg.dx.acl.policy.dao.model;
 
+import static org.cdpg.dx.aaa.common.Constants.ACTIVE;
 import static org.cdpg.dx.aaa.common.Constants.OWNER;
 import static org.cdpg.dx.acl.accessRequest.config.Constants.OWNER_EMAIL;
 import static org.cdpg.dx.acl.accessRequest.config.Constants.OWNER_FIRST_NAME;
@@ -13,6 +14,7 @@ import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.CONSUMER_LAST
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.CONSUMER_ORGANIZATION;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_FEEDBACK_TO_CONSUMER;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_PROVIDER_COMMENT;
+import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.EXPIRED;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.FEEDBACK_TO_CONSUMER;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.OWNER_ID;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.POLICY_TABLE;
@@ -23,6 +25,7 @@ import io.vertx.core.json.JsonObject;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import org.cdpg.dx.common.util.ExpiredStatusHelper;
 import org.cdpg.dx.database.postgres.base.entity.BaseEntity;
 import org.cdpg.dx.database.postgres.util.EntityUtil;
 
@@ -119,7 +122,7 @@ public class PolicyDto implements BaseEntity<PolicyDto> {
         .put("policyId", policyId)
         .put("requestId", requestId)
         .put("policyType", policyType)
-        .put("status", status)
+        .put("status", ExpiredStatusHelper.effectiveStatus(status, expiryAt, ACTIVE, EXPIRED))
         .put("constraints", constraints)
         .put(ADDITIONAL_INFO, additionalInfo)
         .put(PROVIDER_COMMENT, providerComment)

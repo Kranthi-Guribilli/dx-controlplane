@@ -19,9 +19,12 @@ import org.cdpg.dx.acl.accessRequest.dao.model.AccessRequestDto;
 import org.cdpg.dx.acl.accessRequest.dao.model.AccessRequestSummary;
 import org.cdpg.dx.acl.accessRequest.dao.model.Status;
 import org.cdpg.dx.common.exception.*;
+import org.cdpg.dx.common.request.PaginatedRequest;
+import org.cdpg.dx.common.util.ExpiredStatusHelper;
 import org.cdpg.dx.database.postgres.base.dao.AbstractBaseDAO;
 import org.cdpg.dx.database.postgres.models.Condition;
 import org.cdpg.dx.database.postgres.models.OrderBy;
+import org.cdpg.dx.database.postgres.models.PaginatedResult;
 import org.cdpg.dx.database.postgres.models.SelectQuery;
 import org.cdpg.dx.database.postgres.models.UpdateQuery;
 import org.cdpg.dx.database.postgres.service.PostgresService;
@@ -36,6 +39,22 @@ public class AccessRequestDaoImpl extends AbstractBaseDAO<AccessRequestDto>
       String idField,
       Function<JsonObject, AccessRequestDto> fromJson) {
     super(postgresService, tableName, idField, fromJson);
+  }
+
+  /**
+   * Expired is derived from {@code expiry_at} rather than stored, so a status filter of GRANTED or
+   * EXPIRED is rewritten to match (see {@link ExpiredStatusHelper#rewriteStatusFilter}).
+   */
+  @Override
+  public Future<PaginatedResult<AccessRequestDto>> getAllWithFilters(PaginatedRequest request) {
+    ExpiredStatusHelper.StatusFilter statusFilter =
+        ExpiredStatusHelper.rewriteStatusFilter(
+            request, DB_STATUS, DB_EXPIRY_AT, Status.GRANTED.getStatus(), EXPIRED);
+    if (statusFilter == null) {
+      return super.getAllWithFilters(request);
+    }
+    return ExpiredStatusHelper.getAllWithStatusFilter(
+        this, postgresService, tableName, statusFilter);
   }
 
   // select * from request where consumer_id = givenId and status IS GRANTED or PENDING AND item_id

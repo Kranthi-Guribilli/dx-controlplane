@@ -566,6 +566,7 @@
           enum:
             - ACTIVE
             - DELETED
+            - EXPIRED
       - name: organizationId
         in: query
         description: Filter policies by organization ID of the asset. Displays all policies
@@ -671,6 +672,7 @@
           enum:
             - ACTIVE
             - DELETED
+            - EXPIRED
       - name: organizationId
         in: query
         description: Filter policies by organization ID of the asset. Displays all policies
@@ -781,6 +783,7 @@
           enum:
             - ACTIVE
             - DELETED
+            - EXPIRED
       - name: organizationId
         in: query
         description: Filter policies by organization ID of the asset. Displays all policies
@@ -890,6 +893,7 @@
           enum:
             - ACTIVE
             - DELETED
+            - EXPIRED
       - name: organizationId
         in: query
         description: Filter policies by organization ID of the asset. Displays all policies
