@@ -4,6 +4,7 @@ import static org.cdpg.dx.common.util.DateTimeHelper.FORMATTER;
 
 import io.vertx.core.Future;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,10 +28,10 @@ public final class ExpiredStatusHelper {
   private ExpiredStatusHelper() {}
 
   /**
-   * A status filter rewritten to match the derived status: {@code request} filters on the stored
-   * live status, and {@code expiryCondition} must be ANDed with the request's own conditions.
+   * A status filter rewritten to match the derived status: {@code request} no longer filters on
+   * status, and {@code statusCondition} must be ANDed with the request's own conditions.
    */
-  public record StatusFilter(PaginatedRequest request, Condition expiryCondition) {}
+  public record StatusFilter(PaginatedRequest request, Condition statusCondition) {}
 
   /** Returns {@code expiredStatus} if a row stored as {@code liveStatus} is past its expiry. */
   public static String effectiveStatus(
@@ -44,9 +45,10 @@ public final class ExpiredStatusHelper {
   }
 
   /**
-   * Rewrites a single-valued {@code statusKey} filter of {@code liveStatus} or {@code
-   * expiredStatus}: live means stored live and expiry_at after now or null, expired means stored
-   * live and expiry_at before now. Returns null if the request needs no rewrite.
+   * Rewrites a {@code statusKey} filter that includes {@code liveStatus} or {@code expiredStatus}:
+   * live means stored live and expiry_at after now or null, expired means stored live and
+   * expiry_at before now, and any other status matches the stored value. Multiple statuses are
+   * OR-ed together. Returns null if the request needs no rewrite.
    */
   public static StatusFilter rewriteStatusFilter(
       PaginatedRequest request,
@@ -59,32 +61,50 @@ public final class ExpiredStatusHelper {
       return null;
     }
 
-    // The request builder passes query params as a list, e.g. status=[EXPIRED].
-    if (statusFilter instanceof List<?> values) {
-      if (values.size() != 1) {
-        return null;
-      }
-      statusFilter = values.get(0);
-    }
-
-    String status = String.valueOf(statusFilter);
-    String now = LocalDateTime.now().format(FORMATTER);
-    Condition expiryCondition;
-    if (liveStatus.equalsIgnoreCase(status)) {
-      expiryCondition =
-          new Condition(
-              List.of(
-                  new Condition(expiryKey, Condition.Operator.GREATER, List.of(now)),
-                  new Condition(expiryKey, Condition.Operator.IS_NULL, List.of())),
-              Condition.LogicalOperator.OR);
-    } else if (expiredStatus.equalsIgnoreCase(status)) {
-      expiryCondition = new Condition(expiryKey, Condition.Operator.LESS, List.of(now));
-    } else {
+    // The request builder passes query params as a list, e.g. status=[EXPIRED, REJECTED].
+    List<?> values = statusFilter instanceof List<?> list ? list : List.of(statusFilter);
+    List<String> statuses = values.stream().map(String::valueOf).distinct().toList();
+    boolean wantsLive = statuses.stream().anyMatch(liveStatus::equalsIgnoreCase);
+    boolean wantsExpired = statuses.stream().anyMatch(expiredStatus::equalsIgnoreCase);
+    if (!wantsLive && !wantsExpired) {
       return null;
     }
 
+    List<Object> stored =
+        new ArrayList<>(
+            statuses.stream()
+                .filter(s -> !liveStatus.equalsIgnoreCase(s) && !expiredStatus.equalsIgnoreCase(s))
+                .toList());
+    // Live and expired together cover every stored-live row, so no expiry check is needed.
+    if (wantsLive && wantsExpired) {
+      stored.add(liveStatus);
+    }
+
+    List<Condition> anyOf = new ArrayList<>();
+    if (!stored.isEmpty()) {
+      anyOf.add(
+          new Condition(
+              statusKey,
+              stored.size() == 1 ? Condition.Operator.EQUALS : Condition.Operator.IN,
+              stored));
+    }
+    if (wantsLive != wantsExpired) {
+      String now = LocalDateTime.now().format(FORMATTER);
+      Condition expiryCondition =
+          wantsLive
+              ? new Condition(
+                  List.of(
+                      new Condition(expiryKey, Condition.Operator.GREATER, List.of(now)),
+                      new Condition(expiryKey, Condition.Operator.IS_NULL, List.of())),
+                  Condition.LogicalOperator.OR)
+              : new Condition(expiryKey, Condition.Operator.LESS, List.of(now));
+      anyOf.add(
+          and(new Condition(statusKey, Condition.Operator.EQUALS, List.of(liveStatus)),
+              expiryCondition));
+    }
+
     Map<String, Object> filters = new HashMap<>(request.filters());
-    filters.put(statusKey, liveStatus);
+    filters.remove(statusKey);
 
     return new StatusFilter(
         new PaginatedRequest(
@@ -94,7 +114,7 @@ public final class ExpiredStatusHelper {
             request.temporalRequests(),
             request.orderByList(),
             request.fuzzyFilters()),
-        expiryCondition);
+        anyOf.size() == 1 ? anyOf.get(0) : new Condition(anyOf, Condition.LogicalOperator.OR));
   }
 
   /** ANDs two conditions, either of which may be null. */
@@ -110,7 +130,7 @@ public final class ExpiredStatusHelper {
 
   /**
    * Same paged select as {@link AbstractBaseDAO#getAllWithFilters(PaginatedRequest)}, with the
-   * rewritten filter's expiry condition ANDed in.
+   * rewritten filter's status condition ANDed in.
    */
   public static <T extends BaseEntity<T>> Future<PaginatedResult<T>> getAllWithStatusFilter(
       AbstractBaseDAO<T> dao,
@@ -126,7 +146,7 @@ public final class ExpiredStatusHelper {
         and(
             ConditionBuilder.fromFilters(
                 request.filters(), request.temporalRequests(), request.fuzzyFilters()),
-            statusFilter.expiryCondition());
+            statusFilter.statusCondition());
 
     SelectQuery query =
         new SelectQuery(
