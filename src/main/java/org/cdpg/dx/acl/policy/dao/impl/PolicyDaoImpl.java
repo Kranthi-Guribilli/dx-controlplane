@@ -397,7 +397,7 @@ public class PolicyDaoImpl extends AbstractBaseDAO<PolicyDto> implements PolicyD
     Condition requestCondition =
         ExpiredStatusHelper.and(
             fromFilters(request.filters(), request.temporalRequests()),
-            statusFilter != null ? statusFilter.expiryCondition() : null);
+            statusFilter != null ? statusFilter.statusCondition() : null);
 
     /*
      * (_id IN (...) OR consumer_id = ?)
