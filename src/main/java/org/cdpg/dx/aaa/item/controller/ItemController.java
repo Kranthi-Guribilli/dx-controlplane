@@ -37,7 +37,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -49,6 +48,7 @@ import org.cdpg.dx.aaa.delegation.service.DelegationService;
 import org.cdpg.dx.aaa.email.util.EmailComposer;
 import org.cdpg.dx.aaa.item.enums.ItemAuditOperation;
 import org.cdpg.dx.aaa.item.model.Item;
+import org.cdpg.dx.aaa.item.service.CentralSyncedItemPatcher;
 import org.cdpg.dx.aaa.item.service.ItemFetchService;
 import org.cdpg.dx.aaa.item.service.ItemRegistryService;
 import org.cdpg.dx.aaa.item.service.ItemService;
@@ -76,6 +76,7 @@ import org.cdpg.dx.common.model.DxUser;
 import org.cdpg.dx.common.response.ResponseBuilder;
 import org.cdpg.dx.common.util.CpRoutingContextHelper;
 import org.cdpg.dx.common.util.RoutingContextHelper;
+import org.cdpg.dx.database.elastic.model.ElasticsearchResponse;
 import org.cdpg.dx.keycloak.service.KeycloakUserService;
 
 public class ItemController implements ApiController {
@@ -84,6 +85,7 @@ public class ItemController implements ApiController {
   private final ItemService itemService;
   private final ItemService centralItemService;
   private final ItemFetchService itemFetchService;
+  private final CentralSyncedItemPatcher itemPatcher;
   private final DelegationService delegationService;
   private final String vocContext;
   private final String uploadedBy;
@@ -130,6 +132,8 @@ public class ItemController implements ApiController {
     this.scriptGenerationService = new ScriptGenerationService();
     this.itemFetchService =
         new ItemFetchService(itemService, centralItemService, isCentralCatEnabled);
+    this.itemPatcher =
+        new CentralSyncedItemPatcher(itemService, centralItemService, isCentralCatEnabled);
     this.delegationService = delegationService;
     this.keycloakUserService = keycloakUserService;
     this.emailComposer = emailComposer;
@@ -330,23 +334,6 @@ public class ItemController implements ApiController {
     boolean isAdmin  = hasOrgAssetPublishScope || hasAssetPublishScope;
 
     String userId = dxUser.sub().toString();
-    AtomicReference<String> orgId = new AtomicReference<>("");
-    // orgId = user.organisationId();
-
-    // Fetch orgId from Keycloak
-    keycloakUserService
-        .getUserById(UUID.fromString(userId))
-        .onSuccess(
-            keycloakUser -> {
-              orgId.set(keycloakUser.organisationId());
-            })
-        .onFailure(
-            err -> {
-              LOGGER.error("Failed to fetch user from Keycloak", err);
-              ctx.fail(err);
-            });
-
-    LOGGER.debug("Keycloak ID: {},12aa: {}", orgId, id);
     JsonObject body = ctx.body().asJsonObject();
     LOGGER.debug("Patch item request body: {}", body);
 
@@ -380,10 +367,7 @@ public class ItemController implements ApiController {
       }
     }
 
-    PatchItemRequest patchItemRequest =
-        new PatchItemRequest(id, orgId.get(), userId, body, allowedScopes, dxUser.roles());
-    itemService
-        .patchItem(patchItemRequest)
+    patchItemWithOrgId(id, userId, body, allowedScopes, dxUser.roles())
         .onSuccess(
             elasticsearchResponse -> {
               JsonObject itemJson = elasticsearchResponse.getSource();
@@ -450,23 +434,6 @@ public class ItemController implements ApiController {
     boolean hasAssetPublishScope = allowedScopes.contains(Scopes.ASSET_PUBLISH);
 
     String userId = dxUser.sub().toString();
-    AtomicReference<String> orgId = new AtomicReference<>("");
-    // orgId = user.organisationId();
-
-    // Fetch orgId from Keycloak
-    keycloakUserService
-        .getUserById(UUID.fromString(userId))
-        .onSuccess(
-            keycloakUser -> {
-              orgId.set(keycloakUser.organisationId());
-            })
-        .onFailure(
-            err -> {
-              LOGGER.error("Failed to fetch user from Keycloak", err);
-              ctx.fail(err);
-            });
-
-    LOGGER.debug("Keycloak ID: {},12aa: {}", orgId, id);
 
     if (body.containsKey(PUBLISH_STATUS) && !hasAssetPublishScope) {
       ctx.fail(new DxForbiddenException(
@@ -496,10 +463,7 @@ public class ItemController implements ApiController {
     }
 
     body.put(LAST_UPDATED, getUtcDatetimeAsString());
-    PatchItemRequest patchItemRequest =
-        new PatchItemRequest(id, orgId.get(), userId, body, allowedScopes, dxUser.roles());
-    itemService
-        .patchItem(patchItemRequest)
+    patchItemWithOrgId(id, userId, body, allowedScopes, dxUser.roles())
         .onSuccess(
             elasticsearchResponse -> {
               JsonObject itemJson = elasticsearchResponse.getSource();
@@ -517,6 +481,28 @@ public class ItemController implements ApiController {
               LOGGER.error("Patch item failed", err);
               ctx.fail(err);
             });
+  }
+
+  /** Resolves the caller's organisation from Keycloak, then patches local (and central) items. */
+  private Future<ElasticsearchResponse> patchItemWithOrgId(
+      String id,
+      String userId,
+      JsonObject body,
+      JsonArray allowedScopes,
+      List<String> allowedRoles) {
+    return keycloakUserService
+        .getUserById(UUID.fromString(userId))
+        .onFailure(err -> LOGGER.error("Failed to fetch user from Keycloak", err))
+        .compose(
+            keycloakUser ->
+                itemPatcher.patchItem(
+                    new PatchItemRequest(
+                        id,
+                        keycloakUser.organisationId(),
+                        userId,
+                        body,
+                        allowedScopes,
+                        allowedRoles)));
   }
 
   private String extractAndValidateItemType(RoutingContext ctx, JsonObject body) {
