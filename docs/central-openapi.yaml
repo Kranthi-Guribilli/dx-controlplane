@@ -193,9 +193,6 @@ tags:
       from resource entities. Each subscription is identified by a queue name and is bound
       to specific entity IDs and resource groups. Subscriptions can be created, listed,
       retrieved by ID, updated, and deleted.
-      #- name: Summary
-      #description: |
-      #Dashboard summary APIs that aggregate platform-wide usage statistics — including
   - name: token
     description: |
       JWT access token issuance APIs. Supports three token modes:
@@ -23821,6 +23818,55 @@ components:
         actionSubdata:
           type: object
           description: Additional structured data associated with the action
+    UserFeedbackResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: UUID of the feedback
+        userId:
+          type: string
+          format: uuid
+          description: UUID of the user who submitted the feedback
+        userName:
+          type: string
+          nullable: true
+          description: Display name of the user who submitted the feedback, resolved best-effort from the identity provider
+        organisation:
+          type: string
+          nullable: true
+          description: Organisation name of the user who submitted the feedback, when available
+        assetId:
+          type: string
+          format: uuid
+          description: UUID of the asset
+        assetType:
+          type: string
+          description: Type of the asset
+          enum:
+            - DATABANK
+            - AI_MODEL
+            - USECASE
+        entityRating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Star rating from 1 (lowest) to 5 (highest)
+        actionSubtype:
+          type: string
+          description: Structured feedback category
+        actionSubdata:
+          type: object
+          description: Additional structured data associated with the feedback (e.g. a free-text comment)
+        ratingCreatedAt:
+          type: string
+          format: date-time
+          description: When this user first gave feedback/rating on this asset. Distinct from the asset's own interaction record, which is also touched by unrelated like/dislike/bookmark activity.
+        ratingUpdatedAt:
+          type: string
+          format: date-time
+          description: When this user's feedback/rating on this asset was last changed
     UserFeedbackPaginatedResponse:
       type: object
       required:
@@ -25235,55 +25281,6 @@ components:
               type: integer
               format: int64
               example: 1
-    UserFeedbackResult:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: UUID of the feedback
-        userId:
-          type: string
-          format: uuid
-          description: UUID of the user who submitted the feedback
-        userName:
-          type: string
-          nullable: true
-          description: Display name of the user who submitted the feedback, resolved best-effort from the identity provider
-        organisation:
-          type: string
-          nullable: true
-          description: Organisation name of the user who submitted the feedback, when available
-        assetId:
-          type: string
-          format: uuid
-          description: UUID of the asset
-        assetType:
-          type: string
-          description: Type of the asset
-          enum:
-            - DATABANK
-            - AI_MODEL
-            - USECASE
-        entityRating:
-          type: integer
-          minimum: 1
-          maximum: 5
-          description: Star rating from 1 (lowest) to 5 (highest)
-        actionSubtype:
-          type: string
-          description: Structured feedback category
-        actionSubdata:
-          type: object
-          description: Additional structured data associated with the feedback (e.g. a free-text comment)
-        ratingCreatedAt:
-          type: string
-          format: date-time
-          description: When this user first gave feedback/rating on this asset. Distinct from the asset's own interaction record, which is also touched by unrelated like/dislike/bookmark activity.
-        ratingUpdatedAt:
-          type: string
-          format: date-time
-          description: When this user's feedback/rating on this asset was last changed
     ProviderFeedbackRequest:
       type: object
       required:

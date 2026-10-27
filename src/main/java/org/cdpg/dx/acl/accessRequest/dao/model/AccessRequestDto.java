@@ -15,6 +15,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cdpg.dx.common.model.RequestType;
+import org.cdpg.dx.common.util.ExpiredStatusHelper;
 import org.cdpg.dx.database.postgres.base.entity.BaseEntity;
 import org.cdpg.dx.database.postgres.util.EntityUtil;
 
@@ -141,7 +142,12 @@ public class AccessRequestDto implements BaseEntity<AccessRequestDto> {
     JsonObject request =
         new JsonObject()
             .put(REQUEST_ID, getRequestId())
-            .put(REQUEST_STATUS, getStatus())
+            .put(
+                REQUEST_STATUS,
+                getStatus() != null
+                    ? ExpiredStatusHelper.effectiveStatus(
+                        getStatus().getStatus(), getExpiryAt(), Status.GRANTED.getStatus(), EXPIRED)
+                    : null)
             .put(REQUEST_TYPE, getRequestType())
             .put(ADDITIONAL_INFO, getAdditionalInfo())
             .put(CONSTRAINTS, getConstraints())

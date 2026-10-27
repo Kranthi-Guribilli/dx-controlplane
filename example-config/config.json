@@ -210,9 +210,16 @@
     {
       "grpcAllowedServiceClients": [
         "svc-dx-dataplane",
-        "svc-dx-dataplane-ogc"
+        "svc-dx-dataplane-ogc",
+        "svc-dx-marketplace-go"
       ],
       "grpcPort": 9090,
+      "grpcRoleGrants": {
+        "svc-dx-marketplace-go": [
+          "mor_admin",
+          "seller"
+        ]
+      },
       "id": "org.cdpg.dx.aaa.grpc.GrpcServerVerticle",
       "isWorkerVerticle": false,
       "keycloakJwksUrl": "https://<domain>/auth/realms/<tenantPrefix>/protocol/openid-connect/certs",
@@ -233,7 +240,7 @@
     "databaseUserName": "<tenantPrefix>_controlplane_user",
     "poolSize": 25
   },
-  "version": 2,
+  "version": 3,
   "zookeepers": [
     "zookeeper-client.zookeeper.svc.cluster.local"
   ]

@@ -2,15 +2,10 @@ package org.cdpg.dx.aaa.delegation.dao.impl;
 
 import static org.cdpg.dx.aaa.delegation.util.Constants.*;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_STATUS;
-import static org.cdpg.dx.common.util.DateTimeHelper.FORMATTER;
 
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,14 +14,13 @@ import org.cdpg.dx.aaa.delegation.models.DelegationGrant;
 import org.cdpg.dx.aaa.delegation.util.Status;
 import org.cdpg.dx.common.exception.BaseDxException;
 import org.cdpg.dx.common.request.PaginatedRequest;
-import org.cdpg.dx.common.request.TemporalRequest;
+import org.cdpg.dx.common.util.ExpiredStatusHelper;
 import org.cdpg.dx.database.postgres.base.dao.AbstractBaseDAO;
 import org.cdpg.dx.database.postgres.models.Condition;
 import org.cdpg.dx.database.postgres.models.PaginatedResult;
 import org.cdpg.dx.database.postgres.models.QueryResult;
 import org.cdpg.dx.database.postgres.models.UpdateQuery;
 import org.cdpg.dx.database.postgres.service.PostgresService;
-import org.cdpg.dx.database.postgres.util.ConditionBuilder;
 
 public class DelegationGrantDAOImpl extends AbstractBaseDAO<DelegationGrant> implements DelegationGrantDAO {
 
@@ -38,57 +32,23 @@ public class DelegationGrantDAOImpl extends AbstractBaseDAO<DelegationGrant> imp
 
   /**
    * Expired is derived from {@code expiry_at} rather than stored (see {@link
-   * DelegationGrant#effectiveStatus}), so a {@code status} filter of active or expired is rewritten
-   * to match: active means stored active and not yet past expiry, expired means stored active and
-   * past expiry.
+   * DelegationGrant#effectiveStatus}), so a status filter of active or expired is rewritten to
+   * match (see {@link ExpiredStatusHelper#rewriteStatusFilter}).
    */
   @Override
   public Future<PaginatedResult<DelegationGrant>> getAllWithFilters(PaginatedRequest request) {
-    Object statusFilter = request.filters() != null ? request.filters().get(STATUS) : null;
     LOGGER.debug(
         "Delegation list request - filters: {}, temporal: {}",
         request.filters(),
         request.temporalRequests());
+    ExpiredStatusHelper.StatusFilter statusFilter =
+        ExpiredStatusHelper.rewriteStatusFilter(
+            request, STATUS, EXPIRY_AT, Status.ACTIVE.getStatus(), Status.EXPIRED.getStatus());
     if (statusFilter == null) {
       return super.getAllWithFilters(request);
     }
-
-    // The request builder passes query params as a list, e.g. status=[expired].
-    if (statusFilter instanceof List<?> values) {
-      if (values.size() != 1) {
-        return super.getAllWithFilters(request);
-      }
-      statusFilter = values.get(0);
-    }
-
-    String status = String.valueOf(statusFilter);
-    String timeRel;
-    if (Status.ACTIVE.getStatus().equalsIgnoreCase(status)) {
-      timeRel = "after";
-    } else if (Status.EXPIRED.getStatus().equalsIgnoreCase(status)) {
-      timeRel = "before";
-    } else {
-      return super.getAllWithFilters(request);
-    }
-
-    Map<String, Object> filters = new HashMap<>(request.filters());
-    filters.put(STATUS, Status.ACTIVE.getStatus());
-
-    List<TemporalRequest> temporalRequests =
-        request.temporalRequests() != null
-            ? new ArrayList<>(request.temporalRequests())
-            : new ArrayList<>();
-    temporalRequests.add(
-        new TemporalRequest(EXPIRY_AT, timeRel, LocalDateTime.now().format(FORMATTER), null));
-
-    return super.getAllWithFilters(
-        new PaginatedRequest(
-            request.page(),
-            request.size(),
-            filters,
-            temporalRequests,
-            request.orderByList(),
-            request.fuzzyFilters()));
+    return ExpiredStatusHelper.getAllWithStatusFilter(
+        this, postgresService, tableName, statusFilter);
   }
 
   @Override

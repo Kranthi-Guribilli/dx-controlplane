@@ -48,6 +48,7 @@ import org.cdpg.dx.aaa.delegation.service.DelegationService;
 import org.cdpg.dx.aaa.email.util.EmailComposer;
 import org.cdpg.dx.aaa.item.enums.ItemAuditOperation;
 import org.cdpg.dx.aaa.item.model.Item;
+import org.cdpg.dx.aaa.item.service.CentralSyncedItemPatcher;
 import org.cdpg.dx.aaa.item.service.ItemFetchService;
 import org.cdpg.dx.aaa.item.service.ItemRegistryService;
 import org.cdpg.dx.aaa.item.service.ItemService;
@@ -89,6 +90,7 @@ public class ItemController implements ApiController {
   private final ItemService itemService;
   private final ItemService centralItemService;
   private final ItemFetchService itemFetchService;
+  private final CentralSyncedItemPatcher itemPatcher;
   private final DelegationService delegationService;
   private final String vocContext;
   private final String uploadedBy;
@@ -140,6 +142,8 @@ public class ItemController implements ApiController {
     this.scriptGenerationService = new ScriptGenerationService();
     this.itemFetchService =
         new ItemFetchService(itemService, centralItemService, isCentralCatEnabled);
+    this.itemPatcher =
+        new CentralSyncedItemPatcher(itemService, centralItemService, isCentralCatEnabled);
     this.delegationService = delegationService;
     this.keycloakUserService = keycloakUserService;
     this.emailComposer = emailComposer;
@@ -196,6 +200,7 @@ public class ItemController implements ApiController {
     // the caller is a dept_admin who must be restricted to their own subtree.
     return keycloakUserService
         .getUserById(UUID.fromString(userId))
+        .onFailure(err -> LOGGER.error("Failed to fetch user from Keycloak", err))
         .compose(
             keycloakUser -> {
               String orgId = keycloakUser.organisationId();
@@ -484,7 +489,7 @@ public class ItemController implements ApiController {
     buildPatchItemRequest(
             id, userId, body, allowedScopes, dxUser.roles(), deptAdminScope,
             deptAdminVerification)
-        .compose(itemService::patchItem)
+        .compose(itemPatcher::patchItem)
         .onSuccess(
             elasticsearchResponse -> {
               JsonObject itemJson = elasticsearchResponse.getSource();
@@ -596,7 +601,7 @@ public class ItemController implements ApiController {
     buildPatchItemRequest(
             id, userId, body, allowedScopes, dxUser.roles(), deptAdminScope,
             deptAdminVerification)
-        .compose(itemService::patchItem)
+        .compose(itemPatcher::patchItem)
         .onSuccess(
             elasticsearchResponse -> {
               JsonObject itemJson = elasticsearchResponse.getSource();

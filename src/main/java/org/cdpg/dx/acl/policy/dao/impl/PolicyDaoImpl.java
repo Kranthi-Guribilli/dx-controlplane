@@ -10,6 +10,7 @@ import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_CONSTRAINT
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_CONSUMER_ID;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_CREATED_AT;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_EXPIRY_AT;
+import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.EXPIRED;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_FEEDBACK_TO_CONSUMER;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_ID;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_ITEM_ID;
@@ -43,6 +44,7 @@ import org.cdpg.dx.acl.policy.service.model.CreatePolicyRequest;
 import org.cdpg.dx.common.HttpStatusCode;
 import org.cdpg.dx.common.exception.BaseDxException;
 import org.cdpg.dx.common.request.PaginatedRequest;
+import org.cdpg.dx.common.util.ExpiredStatusHelper;
 import org.cdpg.dx.database.postgres.base.dao.AbstractBaseDAO;
 import org.cdpg.dx.database.postgres.models.Condition;
 import org.cdpg.dx.database.postgres.models.InsertQuery;
@@ -58,6 +60,25 @@ public class PolicyDaoImpl extends AbstractBaseDAO<PolicyDto> implements PolicyD
   private static final Logger LOGGER = LogManager.getLogger(PolicyDaoImpl.class);
   public PolicyDaoImpl(PostgresService postgresService) {
     super(postgresService, POLICY_TABLE, DB_POLICY_ID, PolicyDto::new);
+  }
+
+  /**
+   * Expired is derived from {@code expiry_at} rather than stored, so a status filter of ACTIVE or
+   * EXPIRED is rewritten to match (see {@link ExpiredStatusHelper#rewriteStatusFilter}).
+   */
+  @Override
+  public Future<PaginatedResult<PolicyDto>> getAllWithFilters(PaginatedRequest request) {
+    ExpiredStatusHelper.StatusFilter statusFilter = expiredStatusFilter(request);
+    if (statusFilter == null) {
+      return super.getAllWithFilters(request);
+    }
+    return ExpiredStatusHelper.getAllWithStatusFilter(
+        this, postgresService, tableName, statusFilter);
+  }
+
+  private static ExpiredStatusHelper.StatusFilter expiredStatusFilter(PaginatedRequest request) {
+    return ExpiredStatusHelper.rewriteStatusFilter(
+        request, DB_STATUS, DB_EXPIRY_AT, ACTIVE, EXPIRED);
   }
 
   @Override
@@ -373,6 +394,10 @@ public class PolicyDaoImpl extends AbstractBaseDAO<PolicyDto> implements PolicyD
       Set<String> policyIds,
       String consumerId) {
 
+    ExpiredStatusHelper.StatusFilter statusFilter = expiredStatusFilter(request);
+    if (statusFilter != null) {
+      request = statusFilter.request();
+    }
     int page = request.page() > 0 ? request.page() : 1;
     int size = request.size() > 0 ? request.size() : 10;
     int offset = (page - 1) * size;
@@ -381,7 +406,9 @@ public class PolicyDaoImpl extends AbstractBaseDAO<PolicyDto> implements PolicyD
      * Existing request filters
      */
     Condition requestCondition =
-        fromFilters(request.filters(), request.temporalRequests());
+        ExpiredStatusHelper.and(
+            fromFilters(request.filters(), request.temporalRequests()),
+            statusFilter != null ? statusFilter.statusCondition() : null);
 
     /*
      * (_id IN (...) OR consumer_id = ?)
