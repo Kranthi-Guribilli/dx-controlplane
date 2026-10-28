@@ -3,6 +3,7 @@ package org.cdpg.dx.acl.accessRequest.service.impl;
 import static org.cdpg.dx.aaa.common.Constants.IN_ACTIVE;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_ID;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_REQUEST_ID;
+import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_REJECTED_BY;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.DB_STATUS;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.ORGANIZATION;
 import static org.cdpg.dx.catalogueService.config.Constants.ASSET_NAME_KEY;
@@ -688,14 +689,21 @@ public class AccessRequestServiceImpl implements AccessRequestService {
                         Map<String, Object> conditions =
                             Map.of(DB_REQUEST_ID, requestId.toString());
 
+                        // when delegated, providerId (the token subject) is the delegator; the
+                        // delegate is captured in the audit log via delegate_id / actor_type
                         Map<String, Object> updates =
-                            Map.of(DB_STATUS, Status.REJECTED.getStatus());
+                            Map.of(
+                                DB_STATUS,
+                                Status.REJECTED.getStatus(),
+                                DB_REJECTED_BY,
+                                providerId.toString());
 
                         return accessRequestDao
                             .update(conditions, updates)
                             .map(
                                 updateResult -> {
                                   request.setStatus(Status.REJECTED);
+                                  request.setRejectedById(providerId.toString());
                                   return request;
                                 });
                       });
