@@ -6,6 +6,11 @@ import static org.cdpg.dx.acl.accessRequest.config.Constants.OWNER_EMAIL;
 import static org.cdpg.dx.acl.accessRequest.config.Constants.OWNER_FIRST_NAME;
 import static org.cdpg.dx.acl.accessRequest.config.Constants.OWNER_LAST_NAME;
 import static org.cdpg.dx.acl.accessRequest.config.Constants.OWNER_ORGANIZATION;
+import static org.cdpg.dx.acl.accessRequest.config.Constants.REJECTED_BY_EMAIL;
+import static org.cdpg.dx.acl.accessRequest.config.Constants.REJECTED_BY_FIRST_NAME;
+import static org.cdpg.dx.acl.accessRequest.config.Constants.REJECTED_BY_ID;
+import static org.cdpg.dx.acl.accessRequest.config.Constants.REJECTED_BY_LAST_NAME;
+import static org.cdpg.dx.acl.accessRequest.config.Constants.REJECTED_BY_ORGANIZATION;
 import static org.cdpg.dx.acl.accessRequest.dao.config.DbConstants.*;
 
 import io.vertx.core.json.JsonObject;
@@ -49,6 +54,10 @@ public class AccessRequestDto implements BaseEntity<AccessRequestDto> {
   private String ownerLastName;
   private String ownerOrganization;
   private String rejectedById;
+  private String rejectedByEmail;
+  private String rejectedByFirstName;
+  private String rejectedByLastName;
+  private String rejectedByOrganization;
 
   public AccessRequestDto() {}
 
@@ -183,7 +192,16 @@ public class AccessRequestDto implements BaseEntity<AccessRequestDto> {
                     .put(ORGANIZATION, getItemOrganizationName())
                     .put(ORGANIZATION_ID, getItemOrganizationId())
                     .put(ITEM_DEPARTMENT_ID, getItemHierarchyNodeId()))
-            .put(REJECTED_BY, getRejectedById())
+            .put(
+                REJECTED_BY,
+                getRejectedById() == null
+                    ? null
+                    : new JsonObject()
+                        .put(REJECTED_BY_ID, getRejectedById())
+                        .put(REJECTED_BY_FIRST_NAME, getRejectedByFirstName())
+                        .put(REJECTED_BY_LAST_NAME, getRejectedByLastName())
+                        .put(REJECTED_BY_EMAIL, getRejectedByEmail())
+                        .put(REJECTED_BY_ORGANIZATION, getRejectedByOrganization()))
             .put(CREATED_AT, getCreatedAt())
             .put(UPDATED_AT, getUpdatedAt())
             .put(EXPIRY_AT, getExpiryAt());
@@ -435,6 +453,42 @@ public class AccessRequestDto implements BaseEntity<AccessRequestDto> {
 
   public AccessRequestDto setRejectedById(String rejectedById) {
     this.rejectedById = rejectedById;
+    return this;
+  }
+
+  public String getRejectedByEmail() {
+    return rejectedByEmail;
+  }
+
+  public AccessRequestDto setRejectedByEmail(String rejectedByEmail) {
+    this.rejectedByEmail = rejectedByEmail;
+    return this;
+  }
+
+  public String getRejectedByFirstName() {
+    return rejectedByFirstName;
+  }
+
+  public AccessRequestDto setRejectedByFirstName(String rejectedByFirstName) {
+    this.rejectedByFirstName = rejectedByFirstName;
+    return this;
+  }
+
+  public String getRejectedByLastName() {
+    return rejectedByLastName;
+  }
+
+  public AccessRequestDto setRejectedByLastName(String rejectedByLastName) {
+    this.rejectedByLastName = rejectedByLastName;
+    return this;
+  }
+
+  public String getRejectedByOrganization() {
+    return rejectedByOrganization;
+  }
+
+  public AccessRequestDto setRejectedByOrganization(String rejectedByOrganization) {
+    this.rejectedByOrganization = rejectedByOrganization;
     return this;
   }
 

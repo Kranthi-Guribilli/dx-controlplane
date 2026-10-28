@@ -924,6 +924,37 @@ public class AccessRequestServiceImpl implements AccessRequestService {
 
         futures.add(ownerFuture);
       }
+
+      // Rejected-by enrichment
+      if (dto.getRejectedById() != null) {
+        Future<Void> rejectedByFuture =
+            keycloakUserService
+                .getUserById(UUID.fromString(dto.getRejectedById()))
+                .onSuccess(
+                    user -> {
+                      dto.setRejectedByEmail(user.email());
+                      dto.setRejectedByFirstName(user.givenName());
+                      dto.setRejectedByLastName(user.familyName());
+                      dto.setRejectedByOrganization(user.organisationName());
+                    })
+                .recover(
+                    err -> {
+                      LOGGER.warn(
+                          "Failed to fetch rejectedBy user {}: {}",
+                          dto.getRejectedById(),
+                          err.getMessage());
+
+                      dto.setRejectedByEmail(null);
+                      dto.setRejectedByFirstName(null);
+                      dto.setRejectedByLastName(null);
+                      dto.setRejectedByOrganization(null);
+
+                      return Future.succeededFuture();
+                    })
+                .mapEmpty();
+
+        futures.add(rejectedByFuture);
+      }
     }
 
     return Future.all(futures).map(v -> pagedResult);

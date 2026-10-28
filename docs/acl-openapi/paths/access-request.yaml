@@ -667,6 +667,7 @@
                       ownerLastName: Sanchez
                       ownerEmail: rick@cdpg.org
                       ownerOrganization: CDPG
+                    rejectedBy: null
                     asset:
                       itemId: 316cd4eb-71b3-42c2-beb2-785a77999321
                       assetName: Ice Estimation Model
@@ -1101,6 +1102,7 @@
                       ownerLastName: Sanchez
                       ownerEmail: rick@cdpg.org
                       ownerOrganization: CDPG
+                    rejectedBy: null
                     asset:
                       itemId: 316cd4eb-71b3-42c2-beb2-785a77999321
                       assetName: Ice Estimation Model
@@ -1259,6 +1261,7 @@
                       ownerLastName: Sanchez
                       ownerEmail: rick@cdpg.org
                       ownerOrganization: CDPG
+                    rejectedBy: null
                     asset:
                       itemId: 316cd4eb-71b3-42c2-beb2-785a77999321
                       assetName: Ice Estimation Model
@@ -1566,6 +1569,7 @@
                       ownerLastName: Sanchez
                       ownerEmail: rick@cdpg.org
                       ownerOrganization: CDPG
+                    rejectedBy: null
                     asset:
                       itemId: 316cd4eb-71b3-42c2-beb2-785a77999321
                       assetName: Ice Estimation Model
@@ -1736,6 +1740,7 @@
                       ownerLastName: Sanchez
                       ownerEmail: rick@cdpg.org
                       ownerOrganization: CDPG
+                    rejectedBy: null
                     asset:
                       itemId: 316cd4eb-71b3-42c2-beb2-785a77999321
                       assetName: Ice Estimation Model

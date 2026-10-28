@@ -1151,6 +1151,28 @@ AccessRequest:
               ownerOrganization:
                 type: string
                 minLength: 1
+          rejectedBy:
+            type: object
+            nullable: true
+            description: User who rejected the request; null unless the request
+              was rejected. When a delegate rejects, this is the delegator.
+            properties:
+              rejectedById:
+                type: string
+                format: uuid
+              rejectedByFirstName:
+                type: string
+                nullable: true
+              rejectedByLastName:
+                type: string
+                nullable: true
+              rejectedByEmail:
+                type: string
+                format: email
+                nullable: true
+              rejectedByOrganization:
+                type: string
+                nullable: true
           expiryAt:
             type: string
             minLength: 1

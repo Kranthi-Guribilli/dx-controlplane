@@ -120,6 +120,11 @@ public class Constants {
   public static final String OWNER_LAST_NAME = "ownerLastName";
   public static final String OWNER_EMAIL = "ownerEmail";
   public static final String OWNER_ORGANIZATION = "ownerOrganization";
+  public static final String REJECTED_BY_ID = "rejectedById";
+  public static final String REJECTED_BY_FIRST_NAME = "rejectedByFirstName";
+  public static final String REJECTED_BY_LAST_NAME = "rejectedByLastName";
+  public static final String REJECTED_BY_EMAIL = "rejectedByEmail";
+  public static final String REJECTED_BY_ORGANIZATION = "rejectedByOrganization";
   public static final String CONSUMER_EMAIL_ID = "consumerEmailId";
   public static final String CONSUMER_FIRST_NAME = "consumerFirstName";
   public static final String CONSUMER_LAST_NAME = "consumerLastName";
