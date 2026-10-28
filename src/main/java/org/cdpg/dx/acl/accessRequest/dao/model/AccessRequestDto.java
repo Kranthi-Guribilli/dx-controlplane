@@ -48,6 +48,7 @@ public class AccessRequestDto implements BaseEntity<AccessRequestDto> {
   private String ownerFirstName;
   private String ownerLastName;
   private String ownerOrganization;
+  private String rejectedById;
 
   public AccessRequestDto() {}
 
@@ -71,6 +72,7 @@ public class AccessRequestDto implements BaseEntity<AccessRequestDto> {
             DB_ASSET_ORGANIZATION_ID)); // TODO: change the reference to the appropriate column name
     setItemHierarchyNodeId(request.getString(DB_ITEM_HIERARCHY_NODE_ID));
     setShortDescription(request.getString(DB_SHORT_DESCRIPTION));
+    setRejectedById(request.getString(DB_REJECTED_BY));
     if (request.getString(DB_EXPIRY_AT) != null) {
       setExpiryAt(LocalDateTime.parse(request.getString(DB_EXPIRY_AT)));
     } else {
@@ -103,6 +105,7 @@ public class AccessRequestDto implements BaseEntity<AccessRequestDto> {
             DB_ASSET_ORGANIZATION_ID)); // TODO: change the reference to the appropriate column name
     dto.setItemHierarchyNodeId(entries.getString(DB_ITEM_HIERARCHY_NODE_ID));
     dto.setShortDescription(entries.getString(DB_SHORT_DESCRIPTION));
+    dto.setRejectedById(entries.getString(DB_REJECTED_BY));
     if (entries.getString(DB_EXPIRY_AT) != null) {
       dto.setExpiryAt(LocalDateTime.parse(entries.getString(DB_EXPIRY_AT)));
     } else {
@@ -134,6 +137,7 @@ public class AccessRequestDto implements BaseEntity<AccessRequestDto> {
     EntityUtil.putIfPresent(fieldsMap, DB_SHORT_DESCRIPTION, getShortDescription());
     EntityUtil.putIfPresent(fieldsMap, DB_ASSET_ORGANIZATION_ID, getItemOrganizationId());
     EntityUtil.putIfPresent(fieldsMap, DB_ITEM_HIERARCHY_NODE_ID, getItemHierarchyNodeId());
+    EntityUtil.putIfPresent(fieldsMap, DB_REJECTED_BY, getRejectedById());
 
     return fieldsMap;
   }
@@ -179,6 +183,7 @@ public class AccessRequestDto implements BaseEntity<AccessRequestDto> {
                     .put(ORGANIZATION, getItemOrganizationName())
                     .put(ORGANIZATION_ID, getItemOrganizationId())
                     .put(ITEM_DEPARTMENT_ID, getItemHierarchyNodeId()))
+            .put(REJECTED_BY, getRejectedById())
             .put(CREATED_AT, getCreatedAt())
             .put(UPDATED_AT, getUpdatedAt())
             .put(EXPIRY_AT, getExpiryAt());
@@ -421,6 +426,15 @@ public class AccessRequestDto implements BaseEntity<AccessRequestDto> {
 
   public AccessRequestDto setOwnerOrganization(String ownerOrganization) {
     this.ownerOrganization = ownerOrganization;
+    return this;
+  }
+
+  public String getRejectedById() {
+    return rejectedById;
+  }
+
+  public AccessRequestDto setRejectedById(String rejectedById) {
+    this.rejectedById = rejectedById;
     return this;
   }
 

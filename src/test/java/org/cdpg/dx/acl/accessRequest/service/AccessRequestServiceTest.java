@@ -373,7 +373,8 @@ class AccessRequestServiceTest {
       AccessRequestDto rejectedDto = createPendingAccessRequest();
       rejectedDto.setStatus(Status.REJECTED);
       when(accessRequestDao.update(
-              eq(Map.of("request_id", requestId.toString())), eq(Map.of("status", "REJECTED"))))
+              eq(Map.of("request_id", requestId.toString())),
+              eq(Map.of("status", "REJECTED", "rejected_by", providerId.toString()))))
           .thenReturn(Future.succeededFuture(rejectedDto));
 
       accessRequestService
@@ -386,6 +387,7 @@ class AccessRequestServiceTest {
                           () -> {
                             assertThat(result).isNotNull();
                             assertThat(result.getStatus()).isEqualTo(Status.REJECTED);
+                            assertThat(result.getRejectedById()).isEqualTo(providerId.toString());
                             verify(accessRequestDao)
                                 .ownershipCheck(requestId, providerId, providerOrgId, false, null);
                             verify(accessRequestDao).get(requestId);
