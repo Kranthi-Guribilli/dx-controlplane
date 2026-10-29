@@ -84,6 +84,7 @@ public class Constants {
     public static final String SUB = "sub";
     public static final String REALM_ACCESS = "realm_access";
     public static final String ROLES = "roles";
+    public static final String SCOPES = "scopes";
 
     public static final String RESOURCE_ID = "resourceId";
 
@@ -108,6 +109,8 @@ public class Constants {
     public static final String IN_ACTIVE = "INACTIVE";
     public static final String ITEM_CREATED_AT = "itemCreatedAt";
     public static final String LAST_UPDATED = "lastUpdated";
+    public static final String CREATED_BY = "createdBy";
+    public static final String LAST_UPDATED_BY = "lastUpdatedBy";
 
 
     /** GeoRels. */

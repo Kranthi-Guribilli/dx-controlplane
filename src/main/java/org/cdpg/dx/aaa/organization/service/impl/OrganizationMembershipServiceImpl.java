@@ -142,7 +142,7 @@ public class OrganizationMembershipServiceImpl implements OrganizationMembership
       })
       .recover(err -> {
         LOGGER.error("Failed to fetch organization join request for ID {}: {}", requestId, err.getMessage());
-        if (err instanceof DxNotFoundException) {
+        if (err instanceof DxNotFoundException || err instanceof NoRowFoundException) {
           return Future.failedFuture(err);
         } else {
           return Future.failedFuture(new DxRuntimeException("Database error while fetching provider request", err));
