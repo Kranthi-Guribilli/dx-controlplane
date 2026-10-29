@@ -1,7 +1,5 @@
 package org.cdpg.dx.acl.aclEmailHelper;
 
-import static org.cdpg.dx.acl.accessRequest.dao.model.AssetType.AI_MODEL;
-
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mail.MailMessage;
@@ -124,7 +122,7 @@ public class EmailComposer {
 
   private String getDashboardUrl(String assetType, String itemId) {
     String baseUrl = config.getString("publisherPanelUrl");
-    String path = AssetType.fromString(assetType).equals(AI_MODEL) ? "ai-model" : "data-bank";
+    String path = AssetType.fromString(assetType).isAiModel() ? "ai-model" : "data-bank";
     return baseUrl + "/" + path + "/data-card?id=" + itemId;
   }
 

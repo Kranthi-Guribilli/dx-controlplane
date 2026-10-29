@@ -37,6 +37,7 @@ import java.util.TimeZone;
 import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cdpg.dx.aaa.common.ItemType;
 import org.cdpg.dx.aaa.item.service.ItemService;
 import org.cdpg.dx.auth.model.Scopes;
 import org.cdpg.dx.common.exception.DxBadRequestException;
@@ -68,7 +69,7 @@ public class ItemExistenceValidator {
   private Future<Boolean> itemExists(ItemService service, String itemType, String name) {
     return service
         .itemWithTheNameExists(itemType, name)
-        .map(res -> getReturnTypeForValidation(res.toJson()).contains(itemType))
+        .map(res -> isOfType(res.toJson(), itemType))
         .recover(
             err -> {
               if (DETAIL_ITEM_NOT_FOUND.equals(err.getMessage())) {
@@ -184,10 +185,7 @@ public class ItemExistenceValidator {
         itemService
             .itemWithTheNameExists(ITEM_TYPE_AI_MODEL, name)
             .map(
-                res -> {
-                  String returnType = getReturnTypeForValidation(res.toJson());
-                  return returnType.contains(ITEM_TYPE_AI_MODEL);
-                })
+                res -> isOfType(res.toJson(), ITEM_TYPE_AI_MODEL))
             .recover(
                 err -> {
                   if (DETAIL_ITEM_NOT_FOUND.equals(err.getMessage())) {
@@ -203,10 +201,7 @@ public class ItemExistenceValidator {
             ? centralItemService
                 .itemWithTheNameExists(ITEM_TYPE_AI_MODEL, name)
                 .map(
-                    res -> {
-                      String returnType = getReturnTypeForValidation(res.toJson());
-                      return returnType.contains(ITEM_TYPE_AI_MODEL);
-                    })
+                    res -> isOfType(res.toJson(), ITEM_TYPE_AI_MODEL))
                 .recover(
                     err -> {
                       if (DETAIL_ITEM_NOT_FOUND.equals(err.getMessage())) {
@@ -307,10 +302,7 @@ public class ItemExistenceValidator {
         itemService
             .itemWithTheNameExists(ITEM_TYPE_DATA_BANK, name)
             .map(
-                res -> {
-                  String returnType = getReturnTypeForValidation(res.toJson());
-                  return returnType.contains(ITEM_TYPE_DATA_BANK);
-                })
+                res -> isOfType(res.toJson(), ITEM_TYPE_DATA_BANK))
             .recover(
                 err -> {
                   if (DETAIL_ITEM_NOT_FOUND.equals(err.getMessage())) {
@@ -325,10 +317,7 @@ public class ItemExistenceValidator {
             ? centralItemService
                 .itemWithTheNameExists(ITEM_TYPE_DATA_BANK, name)
                 .map(
-                    res -> {
-                      String returnType = getReturnTypeForValidation(res.toJson());
-                      return returnType.contains(ITEM_TYPE_DATA_BANK);
-                    })
+                    res -> isOfType(res.toJson(), ITEM_TYPE_DATA_BANK))
                 .recover(
                     err -> {
                       if (DETAIL_ITEM_NOT_FOUND.equals(err.getMessage())) {
@@ -499,7 +488,9 @@ public class ItemExistenceValidator {
     }
   }
 
-  private String getReturnTypeForValidation(JsonObject result) {
-    return result.getJsonArray(TYPE).toString();
+  /** True if the item carries the given type under either its adex: or iudx: prefix. */
+  private boolean isOfType(JsonObject result, String itemType) {
+    ItemType type = ItemType.fromTypeValue(itemType);
+    return result.getJsonArray(TYPE).stream().anyMatch(t -> type.matches(String.valueOf(t)));
   }
 }

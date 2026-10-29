@@ -1,9 +1,9 @@
 package org.cdpg.dx.aaa.item.service.central;
 
+import static org.cdpg.dx.aaa.common.Constants.AI_MODEL_TYPES;
+import static org.cdpg.dx.aaa.common.Constants.APPS_TYPES;
+import static org.cdpg.dx.aaa.common.Constants.DATA_BANK_TYPES;
 import static org.cdpg.dx.aaa.common.Constants.FIELD;
-import static org.cdpg.dx.aaa.common.Constants.ITEM_TYPE_AI_MODEL;
-import static org.cdpg.dx.aaa.common.Constants.ITEM_TYPE_APPS;
-import static org.cdpg.dx.aaa.common.Constants.ITEM_TYPE_DATA_BANK;
 import static org.cdpg.dx.aaa.common.Constants.NAME;
 import static org.cdpg.dx.aaa.common.Constants.PII;
 import static org.cdpg.dx.aaa.common.Constants.PRIVATE;
@@ -285,11 +285,11 @@ public class CentralItemServiceImpl implements ItemService {
     String apdUrl = response.getSource().getString(APD_URL);
     String type = response.getSource().getJsonArray(TYPE).getString(0);
     ItemType itemType = null;
-    if (type.equalsIgnoreCase(ITEM_TYPE_DATA_BANK)) {
+    if (DATA_BANK_TYPES.contains(type)) {
       itemType = ItemType.DATABANK;
-    } else if (type.equalsIgnoreCase(ITEM_TYPE_AI_MODEL)) {
+    } else if (AI_MODEL_TYPES.contains(type)) {
       itemType = ItemType.AIMODEL;
-    } else if (type.equalsIgnoreCase(ITEM_TYPE_APPS)) {
+    } else if (APPS_TYPES.contains(type)) {
       itemType = ItemType.APPS;
     }
     if (apdUrl == null || apdUrl.isBlank()) {

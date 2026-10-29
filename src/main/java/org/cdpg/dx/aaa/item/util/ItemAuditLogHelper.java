@@ -4,6 +4,9 @@ import static org.cdpg.dx.aaa.common.Constants.ID;
 import static org.cdpg.dx.aaa.common.Constants.ITEM_TYPE_AI_MODEL;
 import static org.cdpg.dx.aaa.common.Constants.ITEM_TYPE_APPS;
 import static org.cdpg.dx.aaa.common.Constants.ITEM_TYPE_DATA_BANK;
+import static org.cdpg.dx.aaa.common.Constants.ITEM_TYPE_IUDX_AI_MODEL;
+import static org.cdpg.dx.aaa.common.Constants.ITEM_TYPE_IUDX_APPS;
+import static org.cdpg.dx.aaa.common.Constants.ITEM_TYPE_IUDX_DATA_BANK;
 import static org.cdpg.dx.aaa.common.Constants.NAME;
 import static org.cdpg.dx.aaa.common.Constants.TYPE;
 
@@ -20,7 +23,10 @@ public final class ItemAuditLogHelper {
   private static final Map<String, String> ASSET_TYPE_MAPPING = Map.of(
       ITEM_TYPE_DATA_BANK, "DATABANK",
       ITEM_TYPE_AI_MODEL, "AI_MODEL",
-      ITEM_TYPE_APPS, "USECASE"
+      ITEM_TYPE_APPS, "USECASE",
+      ITEM_TYPE_IUDX_DATA_BANK, "DATABANK",
+      ITEM_TYPE_IUDX_AI_MODEL, "AI_MODEL",
+      ITEM_TYPE_IUDX_APPS, "USECASE"
   );
 
   private ItemAuditLogHelper() {}

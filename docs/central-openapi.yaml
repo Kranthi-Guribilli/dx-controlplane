@@ -1120,6 +1120,9 @@ paths:
       description: |
         Create a new catalogue item. The request body defines the entity type
         (e.g., `adex:AiModel`, `adex:DataBank`, `adex:Apps`) and its metadata.
+        The IUDX v1 catalogue types `iudx:AiModel`, `iudx:DataBank` and `iudx:Apps` are
+        also accepted; they behave the same as their `adex:` equivalents and are stored as sent.
+        `yearRange` is optional for DataBank items.
 
         ### Backend-managed fields
         The following fields are automatically set by the backend and must not be modified by the client:
@@ -19623,7 +19626,6 @@ components:
         - industry
         - uploadedBy
         - geoCoverage
-        - yearRange
         - uploadFrequency
         - license
       example:
@@ -23299,7 +23301,6 @@ components:
         - accessPolicy
         - fileFormat
         - industry
-        - yearRange
         - uploadFrequency
         - license
         - resourceServer
@@ -23763,8 +23764,11 @@ components:
         - org
         - provider
         - adex:AiModel
+        - iudx:AiModel
         - adex:DataBank
+        - iudx:DataBank
         - adex:Apps
+        - iudx:Apps
       description: |
         The type of entity this delegation is scoped to.
 

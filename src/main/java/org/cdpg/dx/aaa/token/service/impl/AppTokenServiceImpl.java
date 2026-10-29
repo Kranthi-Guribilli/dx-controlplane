@@ -1,5 +1,7 @@
 package org.cdpg.dx.aaa.token.service.impl;
 
+import static org.cdpg.dx.aaa.common.Constants.PLATFORM_ITEM_TYPES;
+
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
@@ -254,7 +256,7 @@ public class AppTokenServiceImpl implements AppTokenService {
   }
 
   private String resolveItemId(List<AppConstraints> appConstraints, String requestItemId) {
-    Set<String> dataItemTypes = Set.of("adex:Apps", "adex:DataBank", "adex:AiModel");
+    Set<String> dataItemTypes = Set.copyOf(PLATFORM_ITEM_TYPES);
 
     return appConstraints.stream()
       .filter(c -> "data-access".equalsIgnoreCase(c.scope()))

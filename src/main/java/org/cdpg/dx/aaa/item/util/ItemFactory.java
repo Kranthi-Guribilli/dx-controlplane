@@ -23,21 +23,23 @@ public class ItemFactory {
 
     String type = typeList.getFirst();
 
-    return switch (type) {
-      case ITEM_TYPE_DATA_BANK -> DataBankItem.fromJson(body);
-      case ITEM_TYPE_APPS -> AppsItem.fromJson(body);
-      case ITEM_TYPE_AI_MODEL -> AiModelItem.fromJson(body);
-      default -> throw new IllegalArgumentException("Unsupported type: " + type);
-    };
+    if (DATA_BANK_TYPES.contains(type)) {
+      return DataBankItem.fromJson(body);
+    } else if (APPS_TYPES.contains(type)) {
+      return AppsItem.fromJson(body);
+    } else if (AI_MODEL_TYPES.contains(type)) {
+      return AiModelItem.fromJson(body);
+    }
+    throw new IllegalArgumentException("Unsupported type: " + type);
   }
 
   public static Item from(JsonObject json) {
     List<String> types = json.getJsonArray(TYPE).getList();
-    if (types.contains(ITEM_TYPE_AI_MODEL)) {
+    if (types.stream().anyMatch(AI_MODEL_TYPES::contains)) {
       return AiModelItem.fromJson(json);
-    } else if (types.contains(ITEM_TYPE_APPS)) {
+    } else if (types.stream().anyMatch(APPS_TYPES::contains)) {
       return AppsItem.fromJson(json);
-    } else if (types.contains(ITEM_TYPE_DATA_BANK)) {
+    } else if (types.stream().anyMatch(DATA_BANK_TYPES::contains)) {
       return DataBankItem.fromJson(json);
     }
     throw new IllegalArgumentException("Unknown item type: " + types);

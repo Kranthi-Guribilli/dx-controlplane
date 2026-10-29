@@ -43,8 +43,11 @@ DelegationEntityType:
     - org
     - provider
     - adex:AiModel
+    - iudx:AiModel
     - adex:DataBank
+    - iudx:DataBank
     - adex:Apps
+    - iudx:Apps
   description: |
     The type of entity this delegation is scoped to.
 

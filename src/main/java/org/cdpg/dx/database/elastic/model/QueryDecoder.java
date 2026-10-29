@@ -2,9 +2,10 @@ package org.cdpg.dx.database.elastic.model;
 
 import static org.cdpg.dx.aaa.common.Constants.ACTIVE;
 import static org.cdpg.dx.aaa.common.Constants.ITEM_STATUS;
-import static org.cdpg.dx.aaa.common.Constants.ITEM_TYPE_AI_MODEL;
-import static org.cdpg.dx.aaa.common.Constants.ITEM_TYPE_APPS;
-import static org.cdpg.dx.aaa.common.Constants.ITEM_TYPE_DATA_BANK;
+import static org.cdpg.dx.aaa.common.Constants.AI_MODEL_TYPES;
+import static org.cdpg.dx.aaa.common.Constants.APPS_TYPES;
+import static org.cdpg.dx.aaa.common.Constants.DATA_BANK_TYPES;
+import static org.cdpg.dx.aaa.common.Constants.PLATFORM_ITEM_TYPES;
 import static org.cdpg.dx.aaa.common.Constants.VERIFIED;
 import static org.cdpg.dx.aaa.common.Constants.VERIFIED_API;
 import static org.cdpg.dx.aaa.common.Constants.VERIFIED_SFTP;
@@ -96,11 +97,9 @@ public class QueryDecoder {
     if (!searchType.matches(MY_ASSETS_SEARCH_REGEX)
         && !searchType.matches(PF_ASSETS_SEARCH_REGEX)
         && !searchType.matches(ORG_ASSETS_SEARCH_REGEX)) {
-      QueryModel excludeDatabankFalse = buildUploadStatusExclusion(ITEM_TYPE_DATA_BANK);
-      QueryModel excludeAiModelFalse = buildUploadStatusExclusion(ITEM_TYPE_AI_MODEL);
-      QueryModel activePublishStatus =
-          buildActivePublishStatusQuery(
-              List.of(ITEM_TYPE_DATA_BANK, ITEM_TYPE_AI_MODEL, ITEM_TYPE_APPS));
+      QueryModel excludeDatabankFalse = buildUploadStatusExclusion(DATA_BANK_TYPES);
+      QueryModel excludeAiModelFalse = buildUploadStatusExclusion(AI_MODEL_TYPES);
+      QueryModel activePublishStatus = buildActivePublishStatusQuery(PLATFORM_ITEM_TYPES);
       queryMap.get(FilterType.MUST_NOT).add(excludeDatabankFalse);
       queryMap.get(FilterType.MUST_NOT).add(excludeAiModelFalse);
       queryMap.get(FilterType.MUST).add(activePublishStatus);
@@ -247,7 +246,7 @@ public class QueryDecoder {
 
     Map<String, Object> termsParams = new HashMap<>();
     termsParams.put(FIELD, TYPE_KEYWORD);
-    termsParams.put(VALUE, List.of(ITEM_TYPE_DATA_BANK, ITEM_TYPE_AI_MODEL, ITEM_TYPE_APPS));
+    termsParams.put(VALUE, PLATFORM_ITEM_TYPES);
 
     QueryModel termsQuery = new QueryModel(QueryType.TERMS, termsParams);
 
@@ -302,11 +301,9 @@ public class QueryDecoder {
       throw new DxBadRequestException(ex.getMessage(), ex);
     }
 
-    QueryModel excludeDatabankFalse = buildUploadStatusExclusion(ITEM_TYPE_DATA_BANK);
-    QueryModel excludeAiModelFalse = buildUploadStatusExclusion(ITEM_TYPE_AI_MODEL);
-    QueryModel activePublishStatus =
-        buildActivePublishStatusQuery(
-            List.of(ITEM_TYPE_DATA_BANK, ITEM_TYPE_AI_MODEL, ITEM_TYPE_APPS));
+    QueryModel excludeDatabankFalse = buildUploadStatusExclusion(DATA_BANK_TYPES);
+    QueryModel excludeAiModelFalse = buildUploadStatusExclusion(AI_MODEL_TYPES);
+    QueryModel activePublishStatus = buildActivePublishStatusQuery(PLATFORM_ITEM_TYPES);
     queryMap.get(FilterType.MUST_NOT).add(excludeDatabankFalse);
     queryMap.get(FilterType.MUST_NOT).add(excludeAiModelFalse);
     queryMap.get(FilterType.MUST).add(activePublishStatus);
@@ -342,15 +339,24 @@ public class QueryDecoder {
     return finalQuery;
   }
 
-  private QueryModel buildUploadStatusExclusion(String itemType) {
+  private static List<String> typeAliases(String type) {
+    for (List<String> aliases : List.of(DATA_BANK_TYPES, AI_MODEL_TYPES, APPS_TYPES)) {
+      if (aliases.contains(type)) {
+        return aliases;
+      }
+    }
+    return List.of(type);
+  }
+
+  private QueryModel buildUploadStatusExclusion(List<String> itemTypes) {
     return new QueryModel(QueryType.BOOL)
         .setMustQueries(
             List.of(
-                new QueryModel(QueryType.TERM)
+                new QueryModel(QueryType.TERMS)
                     .setQueryParameters(
                         Map.of(
                             FIELD, TYPE_KEYWORD,
-                            VALUE, itemType)),
+                            VALUE, itemTypes)),
                 new QueryModel(QueryType.TERM)
                     .setQueryParameters(Map.of(FIELD, DATA_UPLOAD_STATUS, VALUE, false))));
   }
@@ -405,8 +411,15 @@ public class QueryDecoder {
   }
 
   public QueryModel buildGetItemWithNameExistsQuery(String type, String name) {
-    QueryModel typeMatchQuery = new QueryModel(QueryType.MATCH);
-    typeMatchQuery.setQueryParameters(Map.of(FIELD, TYPE_KEY, VALUE, type));
+    // adex: and iudx: variants of a type share one namespace, so match either
+    List<QueryModel> typeAliasQueries = new ArrayList<>();
+    for (String alias : typeAliases(type)) {
+      typeAliasQueries.add(
+          new QueryModel(QueryType.MATCH).setQueryParameters(Map.of(FIELD, TYPE_KEY, VALUE, alias)));
+    }
+    QueryModel typeMatchQuery = new QueryModel(QueryType.BOOL);
+    typeMatchQuery.setShouldQueries(typeAliasQueries);
+    typeMatchQuery.setMinimumShouldMatch(String.valueOf(1));
     QueryModel nameMatchQuery = new QueryModel(QueryType.MATCH);
     nameMatchQuery.setQueryParameters(Map.of(FIELD, NAME + KEYWORD_KEY, VALUE, name));
 

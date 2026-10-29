@@ -686,9 +686,7 @@ public class ItemController implements ApiController {
 
   private JsonObject injectKeycloakInfoIfApplicable(
       RoutingContext ctx, DxUser user, JsonObject body, String itemType) {
-    if (ITEM_TYPE_AI_MODEL.equals(itemType)
-        || ITEM_TYPE_DATA_BANK.equals(itemType)
-        || ITEM_TYPE_APPS.equals(itemType)) {
+    if (PLATFORM_ITEM_TYPES.contains(itemType)) {
       String orgName = user.organisationName();
       String name = user.name();
 
@@ -751,14 +749,14 @@ public class ItemController implements ApiController {
       JsonObject body,
       String method,
       Promise<JsonObject> promise) {
-    switch (itemType) {
-      case ITEM_TYPE_AI_MODEL ->
-          itemExistenceValidator.validateAiModel(ctx.user().subject(), body, method, promise);
-      case ITEM_TYPE_DATA_BANK ->
-          itemExistenceValidator.validateDataBank(ctx.user().subject(), body, method, promise);
-      case ITEM_TYPE_APPS ->
-          itemExistenceValidator.validateApps(ctx.user().subject(), body, method, promise);
-      default -> ctx.fail(new DxBadRequestException("Unsupported item type: " + itemType));
+    if (AI_MODEL_TYPES.contains(itemType)) {
+      itemExistenceValidator.validateAiModel(ctx.user().subject(), body, method, promise);
+    } else if (DATA_BANK_TYPES.contains(itemType)) {
+      itemExistenceValidator.validateDataBank(ctx.user().subject(), body, method, promise);
+    } else if (APPS_TYPES.contains(itemType)) {
+      itemExistenceValidator.validateApps(ctx.user().subject(), body, method, promise);
+    } else {
+      ctx.fail(new DxBadRequestException("Unsupported item type: " + itemType));
     }
   }
 
@@ -782,7 +780,7 @@ public class ItemController implements ApiController {
       body.remove(SCOPES);
       Item item = ItemFactory.parse(body);
       if (REQUEST_POST.equalsIgnoreCase(method)) {
-        if (ITEM_TYPE_DATA_BANK.equals(ctx.get(ITEM_TYPE))) {
+        if (DATA_BANK_TYPES.contains(ctx.<String>get(ITEM_TYPE))) {
           handleDataBankCreate(ctx, item, body);
         } else {
           executeWithCentralCatalogue(
