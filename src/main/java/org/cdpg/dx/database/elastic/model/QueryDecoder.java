@@ -3,7 +3,6 @@ package org.cdpg.dx.database.elastic.model;
 import static org.cdpg.dx.aaa.common.Constants.ACTIVE;
 import static org.cdpg.dx.aaa.common.Constants.ITEM_STATUS;
 import static org.cdpg.dx.aaa.common.Constants.AI_MODEL_TYPES;
-import static org.cdpg.dx.aaa.common.Constants.APPS_TYPES;
 import static org.cdpg.dx.aaa.common.Constants.DATA_BANK_TYPES;
 import static org.cdpg.dx.aaa.common.Constants.PLATFORM_ITEM_TYPES;
 import static org.cdpg.dx.aaa.common.Constants.VERIFIED;
@@ -14,6 +13,7 @@ import static org.cdpg.dx.database.elastic.util.Constants.*;
 import java.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cdpg.dx.aaa.common.ItemType;
 import org.cdpg.dx.common.exception.DxBadRequestException;
 import org.cdpg.dx.common.exception.DxEsException;
 import org.cdpg.dx.database.elastic.util.AggregationType;
@@ -55,6 +55,7 @@ public class QueryDecoder {
     if (searchType != null && searchType.matches(SEARCH_CRITERIA_REGEX)) {
       LOGGER.debug("Info: searchCriteria block");
       try {
+        expandItemTypeCriteria(request.getSearchCriteriaRequest());
         new SearchCriteriaQueryDecorator(queryMap, request.getSearchCriteriaRequest()).add();
         isValidQuery = true;
       } catch (DxEsException e) {
@@ -294,6 +295,7 @@ public class QueryDecoder {
 
     try {
       new AccessPolicyQueryDecorator(queryMap, request.getAccessPolicyRequest()).add();
+      expandItemTypeCriteria(request.getSearchCriteriaRequest());
       new SearchCriteriaQueryDecorator(queryMap, request.getSearchCriteriaRequest()).add();
       new InstanceFilterQueryDecorator(queryMap, request.getInstanceFilterRequest()).add();
     } catch (DxEsException ex) {
@@ -339,13 +341,23 @@ public class QueryDecoder {
     return finalQuery;
   }
 
-  private static List<String> typeAliases(String type) {
-    for (List<String> aliases : List.of(DATA_BANK_TYPES, AI_MODEL_TYPES, APPS_TYPES)) {
-      if (aliases.contains(type)) {
-        return aliases;
+  /**
+   * Widens term filters on the item type so adex: and iudx: variants of a type are matched
+   * together, e.g. a filter on adex:DataBank also returns iudx:DataBank items.
+   */
+  private static void expandItemTypeCriteria(SearchCriteriaRequestDTO searchCriteriaRequest) {
+    if (searchCriteriaRequest == null || searchCriteriaRequest.getSearchCriteria() == null) {
+      return;
+    }
+    for (SearchCriteriaDTO criterion : searchCriteriaRequest.getSearchCriteria()) {
+      boolean isTypeField =
+          TYPE_KEY.equals(criterion.getField()) || TYPE_KEYWORD.equals(criterion.getField());
+      boolean isTermSearch =
+          criterion.getSearchType() == null || TERM.equals(criterion.getSearchType());
+      if (isTypeField && isTermSearch && criterion.getValues() != null) {
+        criterion.setValues(ItemType.withAliases(criterion.getValues()));
       }
     }
-    return List.of(type);
   }
 
   private QueryModel buildUploadStatusExclusion(List<String> itemTypes) {
@@ -413,7 +425,7 @@ public class QueryDecoder {
   public QueryModel buildGetItemWithNameExistsQuery(String type, String name) {
     // adex: and iudx: variants of a type share one namespace, so match either
     List<QueryModel> typeAliasQueries = new ArrayList<>();
-    for (String alias : typeAliases(type)) {
+    for (Object alias : ItemType.withAliases(List.of(type))) {
       typeAliasQueries.add(
           new QueryModel(QueryType.MATCH).setQueryParameters(Map.of(FIELD, TYPE_KEY, VALUE, alias)));
     }

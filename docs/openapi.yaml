@@ -4801,6 +4801,7 @@ paths:
         Unified catalogue search query for discovering entities that meet complex criteria. The
         `/search` endpoint supports a rich combination of property-based (`term`, `flattenedTerm`),
         range-based, and temporal-based searches using a common `searchCriteria` array format.
+        A `type` filter matches both the `adex:` and `iudx:` variant of a type, e.g. `adex:DataBank` also returns `iudx:DataBank` items.
 
         ### 📌 Visibility of Entities in Discovery
         The `/search` API returns only entities that are fully published and available for discovery. An entity is included in results when:<br> - `publishStatus` is `ACTIVE`<br> - `dataUploadStatus` is `true`<br> - `itemStatus` is one of:<br> - `VERIFIED`<br> - `VERIFIED-SFTP`<br> - `VERIFIED-API`
@@ -5174,7 +5175,9 @@ paths:
         AI Models, and Applications.
 
         Aggregation is always done on `type.keyword`. The response contains a `result` array
-        with type→count pairs.
+        with type→count pairs. Counts for `iudx:` types are merged into the matching `adex:` key
+        (e.g. `iudx:DataBank` items are counted under `adex:DataBank`), and a `type` filter matches
+        both variants.
 
         The request body supports:
         - **Text-only count search** (via `q`)

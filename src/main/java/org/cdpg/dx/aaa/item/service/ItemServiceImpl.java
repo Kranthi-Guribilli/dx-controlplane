@@ -655,8 +655,10 @@ public class ItemServiceImpl implements ItemService {
     QueryModel boolQuery = new QueryModel(QueryType.BOOL);
     QueryModel termQuery = new QueryModel(QueryType.TERM);
     termQuery.setQueryParameters(Map.of(FIELD, ID_KEYWORD, VALUE, id));
-    QueryModel matchQuery = new QueryModel(QueryType.MATCH);
-    matchQuery.setQueryParameters(Map.of(FIELD, TYPE_KEYWORD, VALUE, type));
+    // the stored type may carry either prefix, e.g. a PUT with iudx:DataBank on an adex:DataBank item
+    QueryModel matchQuery = new QueryModel(QueryType.TERMS);
+    List<Object> typeAliases = org.cdpg.dx.aaa.common.ItemType.withAliases(List.of(type));
+    matchQuery.setQueryParameters(Map.of(FIELD, TYPE_KEYWORD, VALUE, typeAliases));
 
     boolQuery.setMustQueries(List.of(termQuery, matchQuery));
 
