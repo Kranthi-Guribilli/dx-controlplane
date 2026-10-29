@@ -67,6 +67,7 @@ import org.cdpg.dx.acl.policy.service.impl.PolicyServiceImpl;
 import org.cdpg.dx.acl.rule.dao.AccessRuleDao;
 import org.cdpg.dx.apiserver.ApiController;
 import org.cdpg.dx.auditing.handler.AuditingHandler;
+import org.cdpg.dx.auditing.v2.util.AuditContextExtractor;
 import org.cdpg.dx.auditing.v2.model.UserActivityAuditLogBuilder;
 import org.cdpg.dx.auth.authorization.handler.AuthorizationHandler;
 import org.cdpg.dx.auth.model.DxRole;
@@ -486,6 +487,14 @@ public class ItemController implements ApiController {
       }
     }
 
+    if (body.containsKey(CREATED_BY)) {
+      ctx.fail(new DxForbiddenException(CREATED_BY + " cannot be updated"));
+      return;
+    }
+
+    body.put(LAST_UPDATED, getUtcDatetimeAsString());
+    body.put(LAST_UPDATED_BY, getActorId(ctx));
+
     buildPatchItemRequest(
             id, userId, body, allowedScopes, dxUser.roles(), deptAdminScope,
             deptAdminVerification)
@@ -587,7 +596,7 @@ public class ItemController implements ApiController {
 
     // Restricted fields
     Set<String> restrictedFields =
-        Set.of(PROVIDER_USER_ID, ORGANIZATION_ID, ITEM_CREATED_AT, METRICS);
+        Set.of(PROVIDER_USER_ID, ORGANIZATION_ID, ITEM_CREATED_AT, METRICS, CREATED_BY);
 
     for (String field : restrictedFields) {
       if (body.containsKey(field)) {
@@ -597,6 +606,7 @@ public class ItemController implements ApiController {
     }
 
     body.put(LAST_UPDATED, getUtcDatetimeAsString());
+    body.put(LAST_UPDATED_BY, getActorId(ctx));
 
     buildPatchItemRequest(
             id, userId, body, allowedScopes, dxUser.roles(), deptAdminScope,
@@ -699,15 +709,18 @@ public class ItemController implements ApiController {
       if (!body.containsKey(UPLOADED_BY) || body.getString(UPLOADED_BY).isBlank()) {
         body.put(UPLOADED_BY, uploadedBy);
       }
-      body.put(ROLES, ctx.user().principal().getJsonObject(REALM_ACCESS).getJsonArray(ROLES));
+      body.put(SCOPES, RoutingContextHelper.fromPrincipal(ctx).scopes());
     }
 
     String method = ctx.request().method().toString();
+
+    String actorId = getActorId(ctx);
 
     if (REQUEST_POST.equalsIgnoreCase(method)) {
 
       // Only set owner during creation
       body.put(PROVIDER_USER_ID, user.sub());
+      body.put(CREATED_BY, actorId);
 
       body.put(
           METRICS, new JsonObject().put(VIEWS, 0).put(DOWNLOADS, 0).put(LIKES, 0).put(DISLIKES, 0));
@@ -716,8 +729,20 @@ public class ItemController implements ApiController {
 
       // Never allow ownership change
       body.remove(PROVIDER_USER_ID);
+      // createdBy is restored from the existing item during validation
+      body.remove(CREATED_BY);
     }
+    body.put(LAST_UPDATED_BY, actorId);
     return body;
+  }
+
+  /**
+   * Id of the user actually making the request. Under delegation, ctx.user()'s sub is the
+   * delegator (who stays the item owner), so the delegate's own id is used instead.
+   */
+  private static String getActorId(RoutingContext ctx) {
+    UUID delegateId = AuditContextExtractor.getDelegateId(ctx);
+    return delegateId != null ? delegateId.toString() : ctx.user().subject();
   }
 
   private void validateItemExistence(
@@ -754,7 +779,7 @@ public class ItemController implements ApiController {
 
   private void processItemCreationOrUpdate(RoutingContext ctx, String method, JsonObject body) {
     try {
-      body.remove(ROLES);
+      body.remove(SCOPES);
       Item item = ItemFactory.parse(body);
       if (REQUEST_POST.equalsIgnoreCase(method)) {
         if (ITEM_TYPE_DATA_BANK.equals(ctx.get(ITEM_TYPE))) {

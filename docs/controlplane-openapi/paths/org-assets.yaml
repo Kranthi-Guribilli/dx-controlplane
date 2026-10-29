@@ -354,6 +354,7 @@
         - `UNVERIFIED` → `SFTP` or `API` can be performed by either the asset `provider` or an `org_admin`.
       - At least one of `publishStatus`, `dataUploadStatus`, or `itemStatus` must be provided.
       - Attempting to update fields or status transitions that the caller is not authorized to modify will result in `403 Forbidden`.
+      - `lastUpdated` and `lastUpdatedBy` are set automatically; `lastUpdatedBy` is the id of the user making the request (the delegate's own id when called by a delegate).
     operationId: patch item
     security:
     - authorization: []
@@ -465,15 +466,22 @@
               title: Not Authorized
               detail: Missing or invalid Bearer token
       '403':
-        description: Forbidden – insufficient privileges
+        description: Forbidden – insufficient privileges, or setting itemStatus to VERIFIED without being org_admin or the item's dept_admin
         content:
           application/json:
             schema:
               $ref: ../components/schemas/common.yaml#/ErrorResponse
-            example:
-              type: urn:dx:controlPlane:forbidden
-              title: Forbidden
-              detail: User does not have the required role.
+            examples:
+              missingRole:
+                value:
+                  type: urn:dx:controlPlane:forbidden
+                  title: Forbidden
+                  detail: User does not have the required role.
+              itemStatusVerifiedNotAllowed:
+                value:
+                  type: urn:dx:controlPlane:forbidden
+                  title: Forbidden
+                  detail: "Only org_admin or the item's dept_admin can update itemStatus to VERIFIED"
     x-codeSamples:
     - lang: cURL
       label: patch item

@@ -2,6 +2,7 @@ package org.cdpg.dx.aaa.item.util;
 
 import static org.cdpg.dx.aaa.common.Constants.ACTIVE;
 import static org.cdpg.dx.aaa.common.Constants.ID;
+import static org.cdpg.dx.aaa.common.Constants.CREATED_BY;
 import static org.cdpg.dx.aaa.common.Constants.ITEM_CREATED_AT;
 import static org.cdpg.dx.aaa.common.Constants.ITEM_STATUS;
 import static org.cdpg.dx.aaa.common.Constants.ITEM_TYPE_AI_MODEL;
@@ -13,16 +14,15 @@ import static org.cdpg.dx.aaa.common.Constants.NAME;
 import static org.cdpg.dx.aaa.common.Constants.PROVIDER_USER_ID;
 import static org.cdpg.dx.aaa.common.Constants.REQUEST_POST;
 import static org.cdpg.dx.aaa.common.Constants.REQUEST_PUT;
+import static org.cdpg.dx.aaa.common.Constants.SCOPES;
 import static org.cdpg.dx.aaa.common.Constants.TYPE;
 import static org.cdpg.dx.aaa.common.Constants.UNVERIFIED;
 import static org.cdpg.dx.aaa.common.Constants.UUID_PATTERN;
 import static org.cdpg.dx.aaa.common.Constants.VALIDATION_FAILURE_MSG;
 import static org.cdpg.dx.aaa.common.Constants.VERIFIED;
-import static org.cdpg.dx.database.elastic.util.Constants.COS_ADMIN;
 import static org.cdpg.dx.database.elastic.util.Constants.DATA_UPLOAD_STATUS;
 import static org.cdpg.dx.database.elastic.util.Constants.DETAIL_ITEM_NOT_FOUND;
 import static org.cdpg.dx.database.elastic.util.Constants.MEDIA_URL;
-import static org.cdpg.dx.database.elastic.util.Constants.ORG_ADMIN;
 import static org.cdpg.dx.database.elastic.util.Constants.PENDING;
 import static org.cdpg.dx.database.elastic.util.Constants.PUBLISH_STATUS;
 
@@ -38,7 +38,7 @@ import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cdpg.dx.aaa.item.service.ItemService;
-import org.cdpg.dx.auth.model.DxRole;
+import org.cdpg.dx.auth.model.Scopes;
 import org.cdpg.dx.common.exception.DxBadRequestException;
 import org.cdpg.dx.common.exception.DxConflictException;
 import org.cdpg.dx.common.exception.DxForbiddenException;
@@ -143,10 +143,10 @@ public class ItemExistenceValidator {
   }
 
   private void setPublishStatus(JsonObject request) {
-    JsonArray roles = request.getJsonArray("roles", new JsonArray());
+    JsonArray scopes = request.getJsonArray(SCOPES, new JsonArray());
     request.put(
         PUBLISH_STATUS,
-        (roles.contains(COS_ADMIN)) ? ACTIVE : PENDING);
+        (scopes.contains(Scopes.ASSET_PUBLISH)) ? ACTIVE : PENDING);
   }
 
   public void validateAiModel(String userId, JsonObject request, String method,
@@ -399,21 +399,25 @@ public class ItemExistenceValidator {
   }
 
   private void setCommonFields(JsonObject request, String method) {
-    JsonArray roles = request.getJsonArray("roles", new JsonArray());
-    boolean isOrgAdmin = roles.contains(DxRole.ORG_ADMIN.value());
+    boolean hasOrgAssetPublishScope = hasOrgAssetPublishScope(request);
 
     if (REQUEST_POST.equalsIgnoreCase(method)) {
-      request.put(ITEM_STATUS, (roles.contains(ORG_ADMIN)) ? VERIFIED : UNVERIFIED);
+      request.put(ITEM_STATUS, hasOrgAssetPublishScope ? VERIFIED : UNVERIFIED);
       request.put(ITEM_CREATED_AT, getUtcDatetimeAsString());
     } else if (REQUEST_PUT.equalsIgnoreCase(method)) {
       String itemStatus = request.getString(ITEM_STATUS);
 
-      if (VERIFIED.equalsIgnoreCase(itemStatus) && !isOrgAdmin) {
-        throw new DxForbiddenException("Only org_admin can update itemStatus to VERIFIED");
+      if (VERIFIED.equalsIgnoreCase(itemStatus) && !hasOrgAssetPublishScope) {
+        throw new DxForbiddenException(
+            "Only users with org_asset_publish scope can update itemStatus to VERIFIED");
       }
     }
 
     request.put(LAST_UPDATED, getUtcDatetimeAsString());
+  }
+
+  private boolean hasOrgAssetPublishScope(JsonObject request) {
+    return request.getJsonArray(SCOPES, new JsonArray()).contains(Scopes.ORG_ASSET_PUBLISH);
   }
 
   private void preserveImmutableFields(JsonObject request, JsonObject existing) {
@@ -424,14 +428,19 @@ public class ItemExistenceValidator {
     // Preserve providerUserId
     request.put(PROVIDER_USER_ID, existing.getString(PROVIDER_USER_ID));
 
+    // Preserve createdBy (absent on items created before it was tracked)
+    String createdBy = existing.getString(CREATED_BY);
+    if (createdBy != null) {
+      request.put(CREATED_BY, createdBy);
+    } else {
+      request.remove(CREATED_BY);
+    }
+
     // Preserve metrics
     request.put(METRICS, existing.getJsonObject(METRICS));
 
-    JsonArray roles = request.getJsonArray("roles", new JsonArray());
-    boolean isOrgAdmin = roles.contains(DxRole.ORG_ADMIN.value());
-
     // Preserve/update itemStatus
-    if (isOrgAdmin) {
+    if (hasOrgAssetPublishScope(request)) {
       request.put(ITEM_STATUS, VERIFIED);
     } else {
       request.put(ITEM_STATUS, existing.getString(ITEM_STATUS, UNVERIFIED));

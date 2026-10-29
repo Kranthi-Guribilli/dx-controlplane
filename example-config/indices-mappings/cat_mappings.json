@@ -509,6 +509,24 @@
           }
         }
       },
+      "createdBy": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "lastUpdatedBy": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
       "owner_bck": {
         "type": "text",
         "fields": {

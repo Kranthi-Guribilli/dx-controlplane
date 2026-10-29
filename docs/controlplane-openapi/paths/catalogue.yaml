@@ -18,7 +18,9 @@
 
       ### Token-derived fields
       The backend populates these fields using the authenticated user's token:
-      - `ownerUserId` (from token `sub`)
+      - `ownerUserId` (from token `sub`; the delegator when called by a delegate)
+      - `createdBy` (id of the user making the request; the delegate's own id when called by a delegate)
+      - `lastUpdatedBy` (same as `createdBy` on creation)
       - `department` (organization name)
       - `uploadedBy` (organization name)
       - `organizationId` (if present in the token and not already provided)
@@ -130,11 +132,13 @@
       - The following fields are immutable and cannot be modified:
         - `id`
         - `ownerUserId`
+        - `createdBy`
         - `organizationId`
         - `itemCreatedAt`
         - `metrics`
         - The first element of the `type` array
       - `lastUpdated` is automatically updated to the current UTC time.
+      - `lastUpdatedBy` is automatically set to the id of the user making the request (the delegate's own id when called by a delegate).
       - `itemStatus` can only be updated to `VERIFIED` by an `org_admin`.
 
       To update only specific metadata fields without replacing the entire item, use the `PATCH /item` API.
@@ -183,15 +187,22 @@
               title: Not Authorized
               detail: Missing or invalid Bearer token
       '403':
-        description: Document doesn't exist to update it
+        description: Forbidden – missing required role, or setting itemStatus to VERIFIED without the org_asset_publish scope
         content:
           application/json:
             schema:
               $ref: ../components/schemas/common.yaml#/updateItemNotFound
-            example:
-              type: urn:dx:controlPlane:forbidden
-              title: Forbidden
-              detail: User does not have the required role.
+            examples:
+              missingRole:
+                value:
+                  type: urn:dx:controlPlane:forbidden
+                  title: Forbidden
+                  detail: User does not have the required role.
+              itemStatusVerifiedNotAllowed:
+                value:
+                  type: urn:dx:controlPlane:forbidden
+                  title: Forbidden
+                  detail: Only users with org_asset_publish scope can update itemStatus to VERIFIED
       '404':
         description: Document doesn't exist to update it
         content:
@@ -398,8 +409,9 @@
       - Asset owners (`provider`) can update any field except `publishStatus` and other restricted fields.
       - Only `cos_admin` can update `publishStatus`.
       - `itemStatus` cannot be updated to `VERIFIED` by a `provider`. It can only be updated to `VERIFIED` by an `org_admin`.
-      - The following fields cannot be updated via this API: `ownerUserId`, `organizationId`, `itemCreatedAt`, and `metrics`.
+      - The following fields cannot be updated via this API: `ownerUserId`, `createdBy`, `organizationId`, `itemCreatedAt`, and `metrics`.
       - `lastUpdated` is automatically set to the current UTC time.
+      - `lastUpdatedBy` is automatically set to the id of the user making the request (the delegate's own id when called by a delegate).
     operationId: patch item metadata
     security:
     - authorization: []
@@ -457,15 +469,22 @@
               title: Not Authorized
               detail: Missing or invalid Bearer token
       '403':
-        description: Forbidden – attempting to update a restricted field or publishStatus without admin role
+        description: Forbidden – attempting to update a restricted field or publishStatus without admin role, or setting itemStatus to VERIFIED without being org_admin or the item's dept_admin
         content:
           application/json:
             schema:
               $ref: ../components/schemas/common.yaml#/ErrorResponse
-            example:
-              type: urn:dx:controlPlane:forbidden
-              title: Forbidden
-              detail: User does not have the required role.
+            examples:
+              missingRole:
+                value:
+                  type: urn:dx:controlPlane:forbidden
+                  title: Forbidden
+                  detail: User does not have the required role.
+              itemStatusVerifiedNotAllowed:
+                value:
+                  type: urn:dx:controlPlane:forbidden
+                  title: Forbidden
+                  detail: "Only org_admin or the item's dept_admin can update itemStatus to VERIFIED"
       '404':
         description: Item not found
         content:
