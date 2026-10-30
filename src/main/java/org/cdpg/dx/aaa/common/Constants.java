@@ -3,7 +3,6 @@ package org.cdpg.dx.aaa.common;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.regex.Pattern;
 
 public class Constants {
@@ -68,28 +67,14 @@ public class Constants {
     public static final String ITEM_TYPE_COS = "iudx:COS";
     public static final String ITEM_TYPE_OWNER = "iudx:Owner";
     public static final String ITEM_TYPE_INSTANCE = "iudx:Instance";
-    public static final String ITEM_TYPE_AI_MODEL = "adex:AiModel";
-    public static final String ITEM_TYPE_DATA_BANK = "adex:DataBank";
-    public static final String ITEM_TYPE_APPS = "adex:Apps";
-    // IUDX v1 catalogue aliases of the adex: platform types; stored as sent
-    public static final String ITEM_TYPE_IUDX_AI_MODEL = "iudx:AiModel";
-    public static final String ITEM_TYPE_IUDX_DATA_BANK = "iudx:DataBank";
-    public static final String ITEM_TYPE_IUDX_APPS = "iudx:Apps";
-
-    public static final List<String> AI_MODEL_TYPES =
-            List.of(ITEM_TYPE_AI_MODEL, ITEM_TYPE_IUDX_AI_MODEL);
-    public static final List<String> DATA_BANK_TYPES =
-            List.of(ITEM_TYPE_DATA_BANK, ITEM_TYPE_IUDX_DATA_BANK);
-    public static final List<String> APPS_TYPES = List.of(ITEM_TYPE_APPS, ITEM_TYPE_IUDX_APPS);
-    public static final List<String> PLATFORM_ITEM_TYPES =
-            List.of(ITEM_TYPE_DATA_BANK, ITEM_TYPE_IUDX_DATA_BANK, ITEM_TYPE_AI_MODEL,
-                    ITEM_TYPE_IUDX_AI_MODEL, ITEM_TYPE_APPS, ITEM_TYPE_IUDX_APPS);
+    // Platform item types (DataBank, AiModel, Apps) carry a per-deployment prefix; see ItemType
+    public static final String ITEM_TYPE_PREFIXES = "itemTypePrefixes";
+    // single-prefix form of itemTypePrefixes, still read for older configs
+    public static final String ITEM_TYPE_PREFIX = "itemTypePrefix";
 
     public static final ArrayList<String> ITEM_TYPES =
             new ArrayList<String>(Arrays.asList(ITEM_TYPE_RESOURCE, ITEM_TYPE_RESOURCE_GROUP,
-                    ITEM_TYPE_RESOURCE_SERVER, ITEM_TYPE_PROVIDER, ITEM_TYPE_COS, ITEM_TYPE_OWNER,
-                    ITEM_TYPE_AI_MODEL, ITEM_TYPE_DATA_BANK, ITEM_TYPE_APPS,
-                    ITEM_TYPE_IUDX_AI_MODEL, ITEM_TYPE_IUDX_DATA_BANK, ITEM_TYPE_IUDX_APPS));
+                    ITEM_TYPE_RESOURCE_SERVER, ITEM_TYPE_PROVIDER, ITEM_TYPE_COS, ITEM_TYPE_OWNER));
 
     public static final String AGGREGATIONS = "aggregations";
     public static final String INSTANCE = "instance";

@@ -6,6 +6,7 @@ import io.vertx.core.json.JsonObject;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cdpg.dx.aaa.common.ItemType;
 import org.cdpg.dx.aaa.item.model.AiModelItem;
 import org.cdpg.dx.aaa.item.model.AppsItem;
 import org.cdpg.dx.aaa.item.model.DataBankItem;
@@ -23,23 +24,23 @@ public class ItemFactory {
 
     String type = typeList.getFirst();
 
-    if (DATA_BANK_TYPES.contains(type)) {
-      return DataBankItem.fromJson(body);
-    } else if (APPS_TYPES.contains(type)) {
-      return AppsItem.fromJson(body);
-    } else if (AI_MODEL_TYPES.contains(type)) {
-      return AiModelItem.fromJson(body);
+    if (!ItemType.isPlatformType(type)) {
+      throw new IllegalArgumentException("Unsupported type: " + type);
     }
-    throw new IllegalArgumentException("Unsupported type: " + type);
+    return switch (ItemType.fromTypeValue(type)) {
+      case DATA_BANK -> DataBankItem.fromJson(body);
+      case APPS -> AppsItem.fromJson(body);
+      case AI_MODEL -> AiModelItem.fromJson(body);
+    };
   }
 
   public static Item from(JsonObject json) {
     List<String> types = json.getJsonArray(TYPE).getList();
-    if (types.stream().anyMatch(AI_MODEL_TYPES::contains)) {
+    if (types.stream().anyMatch(ItemType.AI_MODEL::matches)) {
       return AiModelItem.fromJson(json);
-    } else if (types.stream().anyMatch(APPS_TYPES::contains)) {
+    } else if (types.stream().anyMatch(ItemType.APPS::matches)) {
       return AppsItem.fromJson(json);
-    } else if (types.stream().anyMatch(DATA_BANK_TYPES::contains)) {
+    } else if (types.stream().anyMatch(ItemType.DATA_BANK::matches)) {
       return DataBankItem.fromJson(json);
     }
     throw new IllegalArgumentException("Unknown item type: " + types);

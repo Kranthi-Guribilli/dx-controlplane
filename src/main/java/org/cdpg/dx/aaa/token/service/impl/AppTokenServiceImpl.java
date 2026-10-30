@@ -1,7 +1,5 @@
 package org.cdpg.dx.aaa.token.service.impl;
 
-import static org.cdpg.dx.aaa.common.Constants.PLATFORM_ITEM_TYPES;
-
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
@@ -14,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 import org.cdpg.dx.aaa.appCredentials.model.AppConstraints;
 import org.cdpg.dx.aaa.appCredentials.model.AppCredentials;
 import org.cdpg.dx.aaa.appCredentials.service.AppCredentialsService;
+import org.cdpg.dx.aaa.common.ItemType;
 import org.cdpg.dx.aaa.item.service.ItemService;
 import org.cdpg.dx.aaa.item.util.GetItemRequest;
 import org.cdpg.dx.aaa.token.model.AppTokenRequest;
@@ -256,7 +255,7 @@ public class AppTokenServiceImpl implements AppTokenService {
   }
 
   private String resolveItemId(List<AppConstraints> appConstraints, String requestItemId) {
-    Set<String> dataItemTypes = Set.copyOf(PLATFORM_ITEM_TYPES);
+    Set<String> dataItemTypes = Set.copyOf(ItemType.allTypeValues());
 
     return appConstraints.stream()
       .filter(c -> "data-access".equalsIgnoreCase(c.scope()))

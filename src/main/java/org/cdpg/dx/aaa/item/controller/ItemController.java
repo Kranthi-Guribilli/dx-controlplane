@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cdpg.dx.aaa.apiserver.config.ApiConstants;
+import org.cdpg.dx.aaa.common.ItemType;
 import org.cdpg.dx.aaa.common.VerifyItemTypeAndRole;
 import org.cdpg.dx.aaa.delegation.ItemOwnershipValidator;
 import org.cdpg.dx.aaa.delegation.service.DelegationService;
@@ -638,7 +639,7 @@ public class ItemController implements ApiController {
         throw new IllegalArgumentException("Missing or empty 'type' field");
       }
       Set<String> type = new HashSet<>(typeArray.getList());
-      type.retainAll(ITEM_TYPES);
+      type.removeIf(t -> !ITEM_TYPES.contains(t) && !ItemType.isPlatformType(t));
       if (type.isEmpty()) {
         throw new IllegalArgumentException("No valid types found in 'type' field");
       }
@@ -686,7 +687,7 @@ public class ItemController implements ApiController {
 
   private JsonObject injectKeycloakInfoIfApplicable(
       RoutingContext ctx, DxUser user, JsonObject body, String itemType) {
-    if (PLATFORM_ITEM_TYPES.contains(itemType)) {
+    if (ItemType.isPlatformType(itemType)) {
       String orgName = user.organisationName();
       String name = user.name();
 
@@ -749,14 +750,17 @@ public class ItemController implements ApiController {
       JsonObject body,
       String method,
       Promise<JsonObject> promise) {
-    if (AI_MODEL_TYPES.contains(itemType)) {
-      itemExistenceValidator.validateAiModel(ctx.user().subject(), body, method, promise);
-    } else if (DATA_BANK_TYPES.contains(itemType)) {
-      itemExistenceValidator.validateDataBank(ctx.user().subject(), body, method, promise);
-    } else if (APPS_TYPES.contains(itemType)) {
-      itemExistenceValidator.validateApps(ctx.user().subject(), body, method, promise);
-    } else {
+    if (!ItemType.isPlatformType(itemType)) {
       ctx.fail(new DxBadRequestException("Unsupported item type: " + itemType));
+      return;
+    }
+    switch (ItemType.fromTypeValue(itemType)) {
+      case AI_MODEL ->
+          itemExistenceValidator.validateAiModel(ctx.user().subject(), body, method, promise);
+      case DATA_BANK ->
+          itemExistenceValidator.validateDataBank(ctx.user().subject(), body, method, promise);
+      case APPS ->
+          itemExistenceValidator.validateApps(ctx.user().subject(), body, method, promise);
     }
   }
 
@@ -780,7 +784,7 @@ public class ItemController implements ApiController {
       body.remove(SCOPES);
       Item item = ItemFactory.parse(body);
       if (REQUEST_POST.equalsIgnoreCase(method)) {
-        if (DATA_BANK_TYPES.contains(ctx.<String>get(ITEM_TYPE))) {
+        if (ItemType.DATA_BANK.matches(ctx.get(ITEM_TYPE))) {
           handleDataBankCreate(ctx, item, body);
         } else {
           executeWithCentralCatalogue(

@@ -1,5 +1,7 @@
 package org.cdpg.dx.email.util;
 
+import static org.cdpg.dx.acl.accessRequest.dao.model.AssetType.AI_MODEL;
+
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
@@ -118,7 +120,7 @@ public class EmailComposer {
 
     AssetType type = AssetType.fromString(assetType);
 
-    if (type.isAiModel()) {
+    if (type.equals(AI_MODEL)) {
       return baseUrl + "/model/" + itemId;
     }
 

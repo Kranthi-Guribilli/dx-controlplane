@@ -4,8 +4,8 @@
     - Discovery – Public
     description: "Unified catalogue search query for discovering entities that meet complex criteria. The\n`/search` endpoint\
       \ supports a rich combination of property-based (`term`, `flattenedTerm`),\nrange-based, and temporal-based searches\
-      \ using a common `searchCriteria` array format.\nA `type` filter matches both the `adex:` and `iudx:` variant of a type, e.g. `adex:DataBank`\
-      \ also returns `iudx:DataBank` items.\n\n### \U0001F4CC Visibility of Entities in
+      \ using a common `searchCriteria` array format.\nA `type` filter matches the type under every prefix in `itemTypePrefixes`, e.g. `adex:DataBank`\
+      \ also returns `iudx:DataBank` items when both are configured.\n\n### \U0001F4CC Visibility of Entities in
        Discovery\nThe `/search` API returns only entities that are fully published and available 
        for discovery. An entity is included in results when:<br>
         - `publishStatus` is `ACTIVE`<br>
@@ -212,11 +212,9 @@
 
       Aggregation is always done on `type.keyword`. The response contains a `result` array
 
-      with type→count pairs. Counts for `iudx:` types are merged into the matching `adex:` key
+      with type→count pairs. Counts for every accepted prefix are merged under the primary
 
-      (e.g. `iudx:DataBank` items are counted under `adex:DataBank`), and a `type` filter matches
-
-      both variants.
+      (first) prefix in `itemTypePrefixes`, and a `type` filter matches every accepted prefix.
 
 
       The request body supports:

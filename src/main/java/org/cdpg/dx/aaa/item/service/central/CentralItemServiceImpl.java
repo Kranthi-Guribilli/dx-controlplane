@@ -1,8 +1,5 @@
 package org.cdpg.dx.aaa.item.service.central;
 
-import static org.cdpg.dx.aaa.common.Constants.AI_MODEL_TYPES;
-import static org.cdpg.dx.aaa.common.Constants.APPS_TYPES;
-import static org.cdpg.dx.aaa.common.Constants.DATA_BANK_TYPES;
 import static org.cdpg.dx.aaa.common.Constants.FIELD;
 import static org.cdpg.dx.aaa.common.Constants.NAME;
 import static org.cdpg.dx.aaa.common.Constants.PII;
@@ -285,11 +282,11 @@ public class CentralItemServiceImpl implements ItemService {
     String apdUrl = response.getSource().getString(APD_URL);
     String type = response.getSource().getJsonArray(TYPE).getString(0);
     ItemType itemType = null;
-    if (DATA_BANK_TYPES.contains(type)) {
+    if (org.cdpg.dx.aaa.common.ItemType.DATA_BANK.matches(type)) {
       itemType = ItemType.DATABANK;
-    } else if (AI_MODEL_TYPES.contains(type)) {
+    } else if (org.cdpg.dx.aaa.common.ItemType.AI_MODEL.matches(type)) {
       itemType = ItemType.AIMODEL;
-    } else if (APPS_TYPES.contains(type)) {
+    } else if (org.cdpg.dx.aaa.common.ItemType.APPS.matches(type)) {
       itemType = ItemType.APPS;
     }
     if (apdUrl == null || apdUrl.isBlank()) {
@@ -588,7 +585,7 @@ public class CentralItemServiceImpl implements ItemService {
     QueryModel boolQuery = new QueryModel(QueryType.BOOL);
     QueryModel termQuery = new QueryModel(QueryType.TERM);
     termQuery.setQueryParameters(Map.of(FIELD, ID_KEYWORD, VALUE, id));
-    // the stored type may carry either prefix, e.g. a PUT with iudx:DataBank on an adex:DataBank item
+    // the stored type may carry any accepted prefix, e.g. a PUT with iudx:DataBank on an adex:DataBank item
     QueryModel matchQuery = new QueryModel(QueryType.TERMS);
     List<Object> typeAliases = org.cdpg.dx.aaa.common.ItemType.withAliases(List.of(type));
     matchQuery.setQueryParameters(Map.of(FIELD, TYPE_KEYWORD, VALUE, typeAliases));

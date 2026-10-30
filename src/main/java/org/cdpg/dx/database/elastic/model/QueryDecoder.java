@@ -2,9 +2,6 @@ package org.cdpg.dx.database.elastic.model;
 
 import static org.cdpg.dx.aaa.common.Constants.ACTIVE;
 import static org.cdpg.dx.aaa.common.Constants.ITEM_STATUS;
-import static org.cdpg.dx.aaa.common.Constants.AI_MODEL_TYPES;
-import static org.cdpg.dx.aaa.common.Constants.DATA_BANK_TYPES;
-import static org.cdpg.dx.aaa.common.Constants.PLATFORM_ITEM_TYPES;
 import static org.cdpg.dx.aaa.common.Constants.VERIFIED;
 import static org.cdpg.dx.aaa.common.Constants.VERIFIED_API;
 import static org.cdpg.dx.aaa.common.Constants.VERIFIED_SFTP;
@@ -98,9 +95,9 @@ public class QueryDecoder {
     if (!searchType.matches(MY_ASSETS_SEARCH_REGEX)
         && !searchType.matches(PF_ASSETS_SEARCH_REGEX)
         && !searchType.matches(ORG_ASSETS_SEARCH_REGEX)) {
-      QueryModel excludeDatabankFalse = buildUploadStatusExclusion(DATA_BANK_TYPES);
-      QueryModel excludeAiModelFalse = buildUploadStatusExclusion(AI_MODEL_TYPES);
-      QueryModel activePublishStatus = buildActivePublishStatusQuery(PLATFORM_ITEM_TYPES);
+      QueryModel excludeDatabankFalse = buildUploadStatusExclusion(ItemType.DATA_BANK.typeValues());
+      QueryModel excludeAiModelFalse = buildUploadStatusExclusion(ItemType.AI_MODEL.typeValues());
+      QueryModel activePublishStatus = buildActivePublishStatusQuery(ItemType.allTypeValues());
       queryMap.get(FilterType.MUST_NOT).add(excludeDatabankFalse);
       queryMap.get(FilterType.MUST_NOT).add(excludeAiModelFalse);
       queryMap.get(FilterType.MUST).add(activePublishStatus);
@@ -247,7 +244,7 @@ public class QueryDecoder {
 
     Map<String, Object> termsParams = new HashMap<>();
     termsParams.put(FIELD, TYPE_KEYWORD);
-    termsParams.put(VALUE, PLATFORM_ITEM_TYPES);
+    termsParams.put(VALUE, ItemType.allTypeValues());
 
     QueryModel termsQuery = new QueryModel(QueryType.TERMS, termsParams);
 
@@ -303,9 +300,9 @@ public class QueryDecoder {
       throw new DxBadRequestException(ex.getMessage(), ex);
     }
 
-    QueryModel excludeDatabankFalse = buildUploadStatusExclusion(DATA_BANK_TYPES);
-    QueryModel excludeAiModelFalse = buildUploadStatusExclusion(AI_MODEL_TYPES);
-    QueryModel activePublishStatus = buildActivePublishStatusQuery(PLATFORM_ITEM_TYPES);
+    QueryModel excludeDatabankFalse = buildUploadStatusExclusion(ItemType.DATA_BANK.typeValues());
+    QueryModel excludeAiModelFalse = buildUploadStatusExclusion(ItemType.AI_MODEL.typeValues());
+    QueryModel activePublishStatus = buildActivePublishStatusQuery(ItemType.allTypeValues());
     queryMap.get(FilterType.MUST_NOT).add(excludeDatabankFalse);
     queryMap.get(FilterType.MUST_NOT).add(excludeAiModelFalse);
     queryMap.get(FilterType.MUST).add(activePublishStatus);
@@ -342,8 +339,8 @@ public class QueryDecoder {
   }
 
   /**
-   * Widens term filters on the item type so adex: and iudx: variants of a type are matched
-   * together, e.g. a filter on adex:DataBank also returns iudx:DataBank items.
+   * Widens term filters on the item type to every accepted prefix, e.g. a filter on adex:DataBank
+   * also returns iudx:DataBank items when both prefixes are configured.
    */
   private static void expandItemTypeCriteria(SearchCriteriaRequestDTO searchCriteriaRequest) {
     if (searchCriteriaRequest == null || searchCriteriaRequest.getSearchCriteria() == null) {
@@ -423,7 +420,7 @@ public class QueryDecoder {
   }
 
   public QueryModel buildGetItemWithNameExistsQuery(String type, String name) {
-    // adex: and iudx: variants of a type share one namespace, so match either
+    // every accepted prefix of a type shares one namespace, so match any of them
     List<QueryModel> typeAliasQueries = new ArrayList<>();
     for (Object alias : ItemType.withAliases(List.of(type))) {
       typeAliasQueries.add(
